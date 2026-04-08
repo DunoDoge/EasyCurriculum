@@ -3,6 +3,42 @@
     {
       "name": "page_text_font_size",
       "value": "50fp"
+    },
+    {
+      "name": "title_font_size",
+      "value": "22fp"
+    },
+    {
+      "name": "body_font_size",
+      "value": "16fp"
+    },
+    {
+      "name": "caption_font_size",
+      "value": "14fp"
+    },
+    {
+      "name": "small_font_size",
+      "value": "12fp"
+    },
+    {
+      "name": "slot_height",
+      "value": "60vp"
+    },
+    {
+      "name": "header_height",
+      "value": "40vp"
+    },
+    {
+      "name": "time_header_width",
+      "value": "50vp"
+    },
+    {
+      "name": "card_radius",
+      "value": "8vp"
+    },
+    {
+      "name": "card_padding",
+      "value": "4vp"
     }
   ]
 }
