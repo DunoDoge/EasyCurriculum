@@ -62,32 +62,31 @@ export class CourseViewModel {
     if (course.id === '') {
       course.id = this.generateId();
     }
-    this.courses.push(course);
+    this.courses = [...this.courses, course];
     await this.saveCourses();
   }
 
   async updateCourse(course: CourseInfo): Promise<void> {
     for (let i = 0; i < this.courses.length; i++) {
       if (this.courses[i].id === course.id) {
-        this.courses[i] = course;
+        this.courses[i].name = course.name;
+        this.courses[i].teacher = course.teacher;
+        this.courses[i].location = course.location;
+        this.courses[i].weekDay = course.weekDay;
+        this.courses[i].startSlot = course.startSlot;
+        this.courses[i].endSlot = course.endSlot;
+        this.courses[i].color = course.color;
+        this.courses[i].weekType = course.weekType;
         break;
       }
     }
+    this.courses = [...this.courses];
     await this.saveCourses();
   }
 
   async deleteCourse(id: string): Promise<void> {
-    let index = -1;
-    for (let i = 0; i < this.courses.length; i++) {
-      if (this.courses[i].id === id) {
-        index = i;
-        break;
-      }
-    }
-    if (index >= 0) {
-      this.courses.splice(index, 1);
-      await this.saveCourses();
-    }
+    this.courses = this.courses.filter((course: CourseInfo) => course.id !== id);
+    await this.saveCourses();
   }
 
   getCourseById(id: string): CourseInfo | null {
@@ -117,26 +116,6 @@ export class CourseViewModel {
       }
     }
     return undefined;
-  }
-
-  isCourseStartSlot(weekDay: number, slot: number): boolean {
-    let course = this.getCourseAtSlot(weekDay, slot);
-    if (course !== undefined && course.startSlot === slot) {
-      return true;
-    }
-    return false;
-  }
-
-  getCourseSpanHeight(weekDay: number, slot: number): number {
-    let course = this.getCourseAtSlot(weekDay, slot);
-    if (course !== undefined) {
-      return (course.endSlot - course.startSlot + 1) * Constants.SLOT_HEIGHT;
-    }
-    return 0;
-  }
-
-  isSlotEmpty(weekDay: number, slot: number): boolean {
-    return this.getCourseAtSlot(weekDay, slot) === undefined;
   }
 
   hasConflict(course: CourseInfo, excludeId: string): boolean {

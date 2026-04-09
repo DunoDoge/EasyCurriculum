@@ -82,62 +82,52 @@ struct Index {
 
   @Builder
   DayColumn(day: WeekDay) {
-    Column() {
-      ForEach(Array.from({ length: Constants.TOTAL_SLOTS }, (_v: Object, k: number) => k + 1), (slot: number) => {
-        this.SlotCell(day, slot);
-      }, (slot: number) => slot.toString())
+    Stack() {
+      Column() {
+        ForEach(Array.from({ length: Constants.TOTAL_SLOTS }, (_v: Object, k: number) => k + 1), (slot: number) => {
+          Column() {}
+            .width('100%')
+            .height(Constants.SLOT_HEIGHT)
+            .borderWidth(0.5)
+            .borderColor('#E0E0E0')
+            .backgroundColor(Color.White)
+            .onClick(() => {
+              if (this.viewModel.getCourseAtSlot(day, slot) === undefined) {
+                let newCourse = CourseInfo.createDefault();
+                newCourse.weekDay = day;
+                newCourse.startSlot = slot;
+                newCourse.endSlot = slot;
+                this.navPathStack.pushPath({
+                  name: 'CourseEditPage',
+                  param: newCourse
+                });
+              }
+            })
+        }, (slot: number) => slot.toString())
+      }
+
+      ForEach(this.viewModel.getCoursesByDay(day), (course: CourseInfo) => {
+        CourseCard({
+          course: course,
+          onCardClick: (clickedCourse: CourseInfo) => {
+            this.navPathStack.pushPath({
+              name: 'CourseDetailPage',
+              param: clickedCourse
+            });
+          }
+        })
+      }, (course: CourseInfo) => course.id)
     }
     .layoutWeight(1)
-  }
-
-  @Builder
-  SlotCell(day: WeekDay, slot: number) {
-    Stack() {
-      Column() {}
-        .width('100%')
-        .height(Constants.SLOT_HEIGHT)
-        .borderWidth(0.5)
-        .borderColor('#E0E0E0')
-        .backgroundColor(Color.White)
-
-      if (this.viewModel.isCourseStartSlot(day, slot)) {
-        Column() {
-          CourseCard({
-            course: this.viewModel.getCourseAtSlot(day, slot) as CourseInfo,
-            onCardClick: (clickedCourse: CourseInfo) => {
-              this.navPathStack.pushPath({
-                name: 'CourseDetailPage',
-                param: clickedCourse
-              });
-            }
-          })
-        }
-        .width('100%')
-        .height(this.viewModel.getCourseSpanHeight(day, slot))
-        .padding({ left: 2, right: 2 })
-      }
-    }
-    .width('100%')
-    .height(Constants.SLOT_HEIGHT)
-    .onClick(() => {
-      if (this.viewModel.isSlotEmpty(day, slot)) {
-        let newCourse = CourseInfo.createDefault();
-        newCourse.weekDay = day;
-        newCourse.startSlot = slot;
-        newCourse.endSlot = slot;
-        this.navPathStack.pushPath({
-          name: 'CourseEditPage',
-          param: newCourse
-        });
-      }
-    })
+    .height(Constants.TOTAL_SLOTS * Constants.SLOT_HEIGHT)
+    .clip(false)
   }
 }
 
 @Component
 struct CourseEditPage {
   @State course: CourseInfo = CourseInfo.createDefault();
-  @State viewModel: CourseViewModel = new CourseViewModel();
+  @ObjectLink viewModel: CourseViewModel;
   navPathStack: NavPathStack = new NavPathStack();
   @State selectedWeekDay: number = 1;
   @State selectedStartSlot: number = 1;
@@ -440,7 +430,7 @@ struct CourseEditPage {
 @Component
 struct CourseDetailPage {
   @State course: CourseInfo = CourseInfo.createDefault();
-  @State viewModel: CourseViewModel = new CourseViewModel();
+  @ObjectLink viewModel: CourseViewModel;
   navPathStack: NavPathStack = new NavPathStack();
 
   build() {

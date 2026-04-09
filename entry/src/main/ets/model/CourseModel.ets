@@ -13,6 +13,7 @@ export function getWeekTypeName(type: WeekType): string {
   return names[type];
 }
 
+@Observed
 export class CourseInfo {
   id: string = '';
   name: string = '';
