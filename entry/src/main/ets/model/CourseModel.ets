@@ -104,3 +104,24 @@ export class CourseInfo {
     return false;
   }
 }
+
+export class SemesterConfig {
+  startDate: string = '';
+
+  constructor(startDate: string) {
+    this.startDate = startDate;
+  }
+
+  toJson(): Record<string, Object> {
+    return { 'startDate': this.startDate } as Record<string, Object>;
+  }
+
+  static fromJson(json: Record<string, Object>): SemesterConfig {
+    let startDate = json['startDate'] as string;
+    return new SemesterConfig(startDate);
+  }
+
+  static createDefault(): SemesterConfig {
+    return new SemesterConfig('');
+  }
+}

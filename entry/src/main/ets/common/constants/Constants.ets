@@ -5,10 +5,11 @@ export class Constants {
   static readonly TIME_HEADER_WIDTH: number = 50;
   static readonly DAY_COLUMN_WIDTH: string = '1fr';
   static readonly COURSE_CARD_RADIUS: number = 8;
-  static readonly COURSE_CARD_PADDING: number = 4;
+  static readonly COURSE_CARD_PADDING: number = 6;
   static readonly HEADER_HEIGHT: number = 40;
   static readonly PREFERENCES_NAME: string = 'easy_curriculum_prefs';
   static readonly COURSE_DATA_KEY: string = 'course_data';
+  static readonly SEMESTER_CONFIG_KEY: string = 'semester_config';
   static readonly TOTAL_WEEKS: number = 20;
 
   static readonly SLOT_TIMES: Record<number, string> = {

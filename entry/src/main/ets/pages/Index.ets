@@ -5,6 +5,7 @@ import { Constants } from '../common/constants/Constants';
 import { CourseCard } from '../components/CourseCard';
 import { WeekHeader } from '../components/WeekHeader';
 import { TimeSlotHeader } from '../components/TimeSlotHeader';
+import { SemesterSettingPage } from './SemesterSettingPage';
 
 @Entry
 @Component
@@ -20,7 +21,7 @@ struct Index {
     Navigation(this.navPathStack) {
       Column() {
         Row() {
-          Text('Easy 课程表')
+          Text('Easy课程表')
             .fontSize(22)
             .fontWeight(FontWeight.Bold)
             .fontColor('#333333')
@@ -39,41 +40,68 @@ struct Index {
                 param: CourseInfo.createDefault()
               });
             })
+
+          Text('⚙')
+            .fontSize(20)
+            .fontColor('#333333')
+            .margin({ left: 12 })
+            .onClick(() => {
+              this.navPathStack.pushPath({ name: 'SemesterSettingPage' });
+            })
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 12, bottom: 8 })
         .alignItems(VerticalAlign.Center)
 
-        WeekHeader()
+        WeekHeader({ currentWeek: this.viewModel.currentWeek, semesterStartDate: this.viewModel.semesterStartDate })
 
-        Row() {
-          Text('<')
-            .fontSize(18)
-            .fontColor('#333333')
-            .padding({ left: 16, right: 8 })
-            .onClick(() => {
-              this.viewModel.prevWeek();
-            })
+        Column() {
+          Row() {
+            Text('<')
+              .fontSize(18)
+              .fontColor('#333333')
+              .padding({ left: 16, right: 8 })
+              .onClick(() => {
+                this.viewModel.prevWeek();
+              })
 
-          Text('第' + this.viewModel.currentWeek + '周')
-            .fontSize(16)
-            .fontColor('#333333')
-            .fontWeight(FontWeight.Bold)
+            Column() {
+              Text('第' + this.viewModel.currentWeek + '周')
+                .fontSize(16)
+                .fontColor('#333333')
+                .fontWeight(FontWeight.Bold)
+
+              if (this.viewModel.semesterStartDate !== '') {
+                Text(this.viewModel.getWeekDateRange())
+                  .fontSize(12)
+                  .fontColor('#999999')
+                  .margin({ top: 2 })
+              }
+            }
             .layoutWeight(1)
-            .textAlign(TextAlign.Center)
+            .alignItems(HorizontalAlign.Center)
 
-          Text('>')
-            .fontSize(18)
-            .fontColor('#333333')
-            .padding({ left: 8, right: 16 })
-            .onClick(() => {
-              this.viewModel.nextWeek();
-            })
+            Text('>')
+              .fontSize(18)
+              .fontColor('#333333')
+              .padding({ left: 8, right: 8 })
+              .onClick(() => {
+                this.viewModel.nextWeek();
+              })
+
+            Text('今天')
+              .fontSize(12)
+              .fontColor('#4CAF50')
+              .padding({ left: 8, right: 16 })
+              .onClick(() => {
+                this.viewModel.goToToday();
+              })
+          }
+          .width('100%')
+          .height(this.viewModel.semesterStartDate !== '' ? 56 : Constants.HEADER_HEIGHT)
+          .alignItems(VerticalAlign.Center)
+          .backgroundColor(Color.White)
         }
-        .width('100%')
-        .height(Constants.HEADER_HEIGHT)
-        .alignItems(VerticalAlign.Center)
-        .backgroundColor(Color.White)
 
         Scroll() {
           Row() {
@@ -98,6 +126,7 @@ struct Index {
     .navDestination(this.buildNavDestination)
     .mode(NavigationMode.Stack)
     .titleMode(NavigationTitleMode.Mini)
+    .hideTitleBar(true)
   }
 
   @Builder
@@ -106,6 +135,8 @@ struct Index {
       CourseEditPage({ course: param as CourseInfo, viewModel: this.viewModel, navPathStack: this.navPathStack });
     } else if (name === 'CourseDetailPage') {
       CourseDetailPage({ course: param as CourseInfo, viewModel: this.viewModel, navPathStack: this.navPathStack });
+    } else if (name === 'SemesterSettingPage') {
+      SemesterSettingPage({ viewModel: this.viewModel, navPathStack: this.navPathStack });
     }
   }
 

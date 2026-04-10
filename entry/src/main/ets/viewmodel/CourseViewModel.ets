@@ -1,6 +1,6 @@
 import { preferences } from '@kit.ArkData';
 import { Context } from '@kit.AbilityKit';
-import { CourseInfo } from '../model/CourseModel';
+import { CourseInfo, SemesterConfig } from '../model/CourseModel';
 import { Constants } from '../common/constants/Constants';
 import { Logger } from '../common/utils/Logger';
 
@@ -8,12 +8,15 @@ import { Logger } from '../common/utils/Logger';
 export class CourseViewModel {
   courses: CourseInfo[] = [];
   currentWeek: number = 1;
+  semesterStartDate: string = '';
   private prefs: preferences.Preferences | null = null;
 
   async init(context: Context): Promise<void> {
     try {
       this.prefs = await preferences.getPreferences(context, Constants.PREFERENCES_NAME);
       await this.loadCourses();
+      await this.loadSemesterConfig();
+      this.calculateCurrentWeekFromToday();
       Logger.info('CourseViewModel init success');
     } catch (err) {
       let error = err as Error;
@@ -38,6 +41,127 @@ export class CourseViewModel {
       let error = err as Error;
       Logger.error('Load courses failed: ' + error.message);
     }
+  }
+
+  async loadSemesterConfig(): Promise<void> {
+    if (this.prefs === null) {
+      return;
+    }
+    try {
+      let dataStr = await this.prefs.get(Constants.SEMESTER_CONFIG_KEY, '') as string;
+      if (dataStr === '') {
+        this.semesterStartDate = '';
+        return;
+      }
+      let json: Record<string, Object> = JSON.parse(dataStr) as Record<string, Object>;
+      let config = SemesterConfig.fromJson(json);
+      this.semesterStartDate = config.startDate;
+      Logger.info('Loaded semester config: ' + this.semesterStartDate);
+    } catch (err) {
+      let error = err as Error;
+      Logger.error('Load semester config failed: ' + error.message);
+    }
+  }
+
+  async saveSemesterConfig(startDate: string): Promise<void> {
+    if (this.prefs === null) {
+      return;
+    }
+    try {
+      let config = new SemesterConfig(startDate);
+      let dataStr = JSON.stringify(config.toJson());
+      await this.prefs.put(Constants.SEMESTER_CONFIG_KEY, dataStr);
+      await this.prefs.flush();
+      this.semesterStartDate = startDate;
+      Logger.info('Saved semester config: ' + startDate);
+    } catch (err) {
+      let error = err as Error;
+      Logger.error('Save semester config failed: ' + error.message);
+    }
+  }
+
+  calculateCurrentWeekFromToday(): void {
+    if (this.semesterStartDate === '') {
+      return;
+    }
+    let week = this.calculateWeekFromDate(new Date());
+    if (week < 1) {
+      week = 1;
+    }
+    if (week > Constants.TOTAL_WEEKS) {
+      week = Constants.TOTAL_WEEKS;
+    }
+    this.currentWeek = week;
+  }
+
+  calculateWeekFromDate(date: Date): number {
+    if (this.semesterStartDate === '') {
+      return 1;
+    }
+    let parts: string[] = this.semesterStartDate.split('-');
+    let startYear = Number(parts[0]);
+    let startMonth = Number(parts[1]) - 1;
+    let startDay = Number(parts[2]);
+    let startDate = new Date(startYear, startMonth, startDay);
+    let diffMs = date.getTime() - startDate.getTime();
+    let diffDays = diffMs / (1000 * 60 * 60 * 24);
+    return Math.floor(diffDays / 7) + 1;
+  }
+
+  getDayDate(weekDay: number): string {
+    if (this.semesterStartDate === '') {
+      return '';
+    }
+    let parts: string[] = this.semesterStartDate.split('-');
+    let startYear = Number(parts[0]);
+    let startMonth = Number(parts[1]) - 1;
+    let startDay = Number(parts[2]);
+    let startDate = new Date(startYear, startMonth, startDay);
+    let offsetDays = (this.currentWeek - 1) * 7 + (weekDay - 1);
+    let targetDate = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
+    let month = targetDate.getMonth() + 1;
+    let day = targetDate.getDate();
+    return month + '/' + day;
+  }
+
+  isToday(weekDay: number): boolean {
+    if (this.semesterStartDate === '') {
+      return false;
+    }
+    let today = new Date();
+    let parts: string[] = this.semesterStartDate.split('-');
+    let startYear = Number(parts[0]);
+    let startMonth = Number(parts[1]) - 1;
+    let startDay = Number(parts[2]);
+    let startDate = new Date(startYear, startMonth, startDay);
+    let offsetDays = (this.currentWeek - 1) * 7 + (weekDay - 1);
+    let targetDate = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
+    return today.getFullYear() === targetDate.getFullYear() &&
+      today.getMonth() === targetDate.getMonth() &&
+      today.getDate() === targetDate.getDate();
+  }
+
+  getWeekDateRange(): string {
+    if (this.semesterStartDate === '') {
+      return '';
+    }
+    let parts: string[] = this.semesterStartDate.split('-');
+    let startYear = Number(parts[0]);
+    let startMonth = Number(parts[1]) - 1;
+    let startDay = Number(parts[2]);
+    let startDate = new Date(startYear, startMonth, startDay);
+    let weekStartOffset = (this.currentWeek - 1) * 7;
+    let weekStartDate = new Date(startDate.getTime() + weekStartOffset * 24 * 60 * 60 * 1000);
+    let weekEndDate = new Date(startDate.getTime() + (weekStartOffset + 6) * 24 * 60 * 60 * 1000);
+    let startMonthNum = weekStartDate.getMonth() + 1;
+    let startDayNum = weekStartDate.getDate();
+    let endMonthNum = weekEndDate.getMonth() + 1;
+    let endDayNum = weekEndDate.getDate();
+    return startMonthNum + '月' + startDayNum + '日 - ' + endMonthNum + '月' + endDayNum + '日';
+  }
+
+  goToToday(): void {
+    this.calculateCurrentWeekFromToday();
   }
 
   async saveCourses(): Promise<void> {

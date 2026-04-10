@@ -13,7 +13,7 @@ export struct CourseCard {
           .fontSize(12)
           .fontColor(Color.White)
           .fontWeight(FontWeight.Bold)
-          .maxLines(1)
+          .maxLines(this.course.endSlot - this.course.startSlot + 1 === 1 ? 1 : 2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
 
@@ -21,17 +21,17 @@ export struct CourseCard {
           .fontSize(10)
           .fontColor(Color.White)
           .opacity(0.9)
-          .maxLines(1)
+          .maxLines(this.course.endSlot - this.course.startSlot + 1 <= 2 ? 1 : 2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
           .margin({ top: 2 })
 
-        if (this.course.teacher !== '') {
+        if (this.course.teacher !== '' && this.course.endSlot - this.course.startSlot + 1 > 1) {
           Text(this.course.teacher)
             .fontSize(10)
             .fontColor(Color.White)
             .opacity(0.8)
-            .maxLines(1)
+            .maxLines(this.course.endSlot - this.course.startSlot + 1 <= 2 ? 1 : 2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
             .margin({ top: 2 })
