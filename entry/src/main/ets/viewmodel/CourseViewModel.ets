@@ -7,6 +7,7 @@ import { Logger } from '../common/utils/Logger';
 @Observed
 export class CourseViewModel {
   courses: CourseInfo[] = [];
+  currentWeek: number = 1;
   private prefs: preferences.Preferences | null = null;
 
   async init(context: Context): Promise<void> {
@@ -77,6 +78,8 @@ export class CourseViewModel {
         this.courses[i].endSlot = course.endSlot;
         this.courses[i].color = course.color;
         this.courses[i].weekType = course.weekType;
+        this.courses[i].startWeek = course.startWeek;
+        this.courses[i].endWeek = course.endWeek;
         break;
       }
     }
@@ -101,7 +104,7 @@ export class CourseViewModel {
   getCoursesByDay(weekDay: number): CourseInfo[] {
     let result: CourseInfo[] = [];
     for (let i = 0; i < this.courses.length; i++) {
-      if (this.courses[i].weekDay === weekDay) {
+      if (this.courses[i].weekDay === weekDay && this.courses[i].isOnWeek(this.currentWeek)) {
         result.push(this.courses[i]);
       }
     }
@@ -111,7 +114,7 @@ export class CourseViewModel {
   getCourseAtSlot(weekDay: number, slot: number): CourseInfo | undefined {
     for (let i = 0; i < this.courses.length; i++) {
       let course = this.courses[i];
-      if (course.weekDay === weekDay && slot >= course.startSlot && slot <= course.endSlot) {
+      if (course.weekDay === weekDay && slot >= course.startSlot && slot <= course.endSlot && course.isOnWeek(this.currentWeek)) {
         return course;
       }
     }
@@ -126,11 +129,25 @@ export class CourseViewModel {
       }
       if (existing.weekDay === course.weekDay) {
         if (course.startSlot <= existing.endSlot && course.endSlot >= existing.startSlot) {
-          return true;
+          if (course.startWeek <= existing.endWeek && course.endWeek >= existing.startWeek) {
+            return true;
+          }
         }
       }
     }
     return false;
+  }
+
+  prevWeek(): void {
+    if (this.currentWeek > 1) {
+      this.currentWeek = this.currentWeek - 1;
+    }
+  }
+
+  nextWeek(): void {
+    if (this.currentWeek < Constants.TOTAL_WEEKS) {
+      this.currentWeek = this.currentWeek + 1;
+    }
   }
 
   private generateId(): string {

@@ -46,6 +46,35 @@ struct Index {
 
         WeekHeader()
 
+        Row() {
+          Text('<')
+            .fontSize(18)
+            .fontColor('#333333')
+            .padding({ left: 16, right: 8 })
+            .onClick(() => {
+              this.viewModel.prevWeek();
+            })
+
+          Text('第' + this.viewModel.currentWeek + '周')
+            .fontSize(16)
+            .fontColor('#333333')
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
+
+          Text('>')
+            .fontSize(18)
+            .fontColor('#333333')
+            .padding({ left: 8, right: 16 })
+            .onClick(() => {
+              this.viewModel.nextWeek();
+            })
+        }
+        .width('100%')
+        .height(Constants.HEADER_HEIGHT)
+        .alignItems(VerticalAlign.Center)
+        .backgroundColor(Color.White)
+
         Scroll() {
           Row() {
             TimeSlotHeader()
@@ -97,6 +126,8 @@ struct Index {
                 newCourse.weekDay = day;
                 newCourse.startSlot = slot;
                 newCourse.endSlot = slot;
+                newCourse.startWeek = this.viewModel.currentWeek;
+                newCourse.endWeek = this.viewModel.currentWeek;
                 this.navPathStack.pushPath({
                   name: 'CourseEditPage',
                   param: newCourse
@@ -133,6 +164,8 @@ struct CourseEditPage {
   @State selectedStartSlot: number = 1;
   @State selectedEndSlot: number = 2;
   @State selectedWeekType: number = 0;
+  @State selectedStartWeek: number = 1;
+  @State selectedEndWeek: number = 16;
   @State selectedColorIndex: number = 0;
   @State inputName: string = '';
   @State inputTeacher: string = '';
@@ -146,6 +179,8 @@ struct CourseEditPage {
     this.selectedStartSlot = this.course.startSlot;
     this.selectedEndSlot = this.course.endSlot;
     this.selectedWeekType = this.course.weekType;
+    this.selectedStartWeek = this.course.startWeek;
+    this.selectedEndWeek = this.course.endWeek;
     for (let i = 0; i < Constants.COURSE_COLORS.length; i++) {
       if (Constants.COURSE_COLORS[i] === this.course.color) {
         this.selectedColorIndex = i;
@@ -177,6 +212,10 @@ struct CourseEditPage {
           this.EndSlotSelector();
 
           this.WeekTypeSelector();
+
+          this.StartWeekSelector();
+
+          this.EndWeekSelector();
 
           Column() {
             Text('颜色')
@@ -400,6 +439,76 @@ struct CourseEditPage {
     .alignItems(HorizontalAlign.Start)
   }
 
+  @Builder
+  StartWeekSelector() {
+    Column() {
+      Text('开始周次')
+        .fontSize(14)
+        .fontColor('#333333')
+        .margin({ bottom: 8 })
+
+      Flex({ wrap: FlexWrap.Wrap }) {
+        ForEach(Array.from({ length: Constants.TOTAL_WEEKS }, (_v: Object, k: number) => k + 1), (week: number) => {
+          Column() {
+            Text('第' + week + '周')
+              .fontSize(12)
+              .fontColor(week === this.selectedStartWeek ? Color.White : '#333333')
+          }
+          .height(32)
+          .padding({ left: 8, right: 8 })
+          .borderRadius(16)
+          .backgroundColor(week === this.selectedStartWeek ? '#4CAF50' : '#F0F0F0')
+          .justifyContent(FlexAlign.Center)
+          .margin(3)
+          .onClick(() => {
+            this.selectedStartWeek = week;
+            if (this.selectedEndWeek < this.selectedStartWeek) {
+              this.selectedEndWeek = this.selectedStartWeek;
+            }
+          })
+        }, (week: number) => 'startweek_' + week.toString())
+      }
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+    .alignItems(HorizontalAlign.Start)
+  }
+
+  @Builder
+  EndWeekSelector() {
+    Column() {
+      Text('结束周次')
+        .fontSize(14)
+        .fontColor('#333333')
+        .margin({ bottom: 8 })
+
+      Flex({ wrap: FlexWrap.Wrap }) {
+        ForEach(Array.from({ length: Constants.TOTAL_WEEKS }, (_v: Object, k: number) => k + 1), (week: number) => {
+          Column() {
+            Text('第' + week + '周')
+              .fontSize(12)
+              .fontColor(week === this.selectedEndWeek ? Color.White : '#333333')
+          }
+          .height(32)
+          .padding({ left: 8, right: 8 })
+          .borderRadius(16)
+          .backgroundColor(week === this.selectedEndWeek ? '#4CAF50' : '#F0F0F0')
+          .justifyContent(FlexAlign.Center)
+          .margin(3)
+          .onClick(() => {
+            this.selectedEndWeek = week;
+            if (this.selectedEndWeek < this.selectedStartWeek) {
+              this.selectedEndWeek = this.selectedStartWeek;
+            }
+          })
+        }, (week: number) => 'endweek_' + week.toString())
+      }
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+    .alignItems(HorizontalAlign.Start)
+  }
+
   private saveCourse(): void {
     if (this.inputName.trim() === '') {
       return;
@@ -412,6 +521,8 @@ struct CourseEditPage {
       this.selectedWeekDay,
       this.selectedStartSlot,
       this.selectedEndSlot,
+      this.selectedStartWeek,
+      this.selectedEndWeek,
       Constants.COURSE_COLORS[this.selectedColorIndex],
       this.selectedWeekType
     );
@@ -453,6 +564,7 @@ struct CourseDetailPage {
           this.DetailRow('教室', this.course.location);
           this.DetailRow('星期', getWeekDayName(this.course.weekDay as WeekDay));
           this.DetailRow('节次', '第' + this.course.startSlot + '-' + this.course.endSlot + '节');
+          this.DetailRow('周次', '第' + this.course.startWeek + '-' + this.course.endWeek + '周');
           this.DetailRow('周类型', getWeekTypeName(this.course.weekType));
         }
         .width('100%')

@@ -9,6 +9,7 @@ export class Constants {
   static readonly HEADER_HEIGHT: number = 40;
   static readonly PREFERENCES_NAME: string = 'easy_curriculum_prefs';
   static readonly COURSE_DATA_KEY: string = 'course_data';
+  static readonly TOTAL_WEEKS: number = 20;
 
   static readonly SLOT_TIMES: Record<number, string> = {
     1: '08:00',

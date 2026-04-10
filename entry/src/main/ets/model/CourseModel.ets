@@ -22,6 +22,8 @@ export class CourseInfo {
   weekDay: number = 1;
   startSlot: number = 1;
   endSlot: number = 2;
+  startWeek: number = 1;
+  endWeek: number = 16;
   color: string = '#4CAF50';
   weekType: number = WeekType.EVERY_WEEK;
 
@@ -33,6 +35,8 @@ export class CourseInfo {
     weekDay: number,
     startSlot: number,
     endSlot: number,
+    startWeek: number,
+    endWeek: number,
     color: string,
     weekType: number
   ) {
@@ -43,12 +47,14 @@ export class CourseInfo {
     this.weekDay = weekDay;
     this.startSlot = startSlot;
     this.endSlot = endSlot;
+    this.startWeek = startWeek;
+    this.endWeek = endWeek;
     this.color = color;
     this.weekType = weekType;
   }
 
   static createDefault(): CourseInfo {
-    return new CourseInfo('', '', '', '', 1, 1, 2, '#4CAF50', WeekType.EVERY_WEEK);
+    return new CourseInfo('', '', '', '', 1, 1, 2, 1, 16, '#4CAF50', WeekType.EVERY_WEEK);
   }
 
   toJson(): Record<string, Object> {
@@ -60,6 +66,8 @@ export class CourseInfo {
       'weekDay': this.weekDay,
       'startSlot': this.startSlot,
       'endSlot': this.endSlot,
+      'startWeek': this.startWeek,
+      'endWeek': this.endWeek,
       'color': this.color,
       'weekType': this.weekType
     } as Record<string, Object>;
@@ -73,8 +81,26 @@ export class CourseInfo {
     let weekDay = json['weekDay'] as number;
     let startSlot = json['startSlot'] as number;
     let endSlot = json['endSlot'] as number;
+    let startWeek = json['startWeek'] as number;
+    let endWeek = json['endWeek'] as number;
     let color = json['color'] as string;
     let weekType = json['weekType'] as number;
-    return new CourseInfo(id, name, teacher, location, weekDay, startSlot, endSlot, color, weekType);
+    return new CourseInfo(id, name, teacher, location, weekDay, startSlot, endSlot, startWeek, endWeek, color, weekType);
+  }
+
+  isOnWeek(week: number): boolean {
+    if (week < this.startWeek || week > this.endWeek) {
+      return false;
+    }
+    if (this.weekType === WeekType.EVERY_WEEK) {
+      return true;
+    }
+    if (this.weekType === WeekType.ODD_WEEK) {
+      return week % 2 === 1;
+    }
+    if (this.weekType === WeekType.EVEN_WEEK) {
+      return week % 2 === 0;
+    }
+    return false;
   }
 }
