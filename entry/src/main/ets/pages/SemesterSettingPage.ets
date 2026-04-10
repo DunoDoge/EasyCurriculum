@@ -66,7 +66,6 @@ export struct SemesterSettingPage {
           .margin({ top: 32 })
           .onClick(async () => {
             await this.viewModel.saveSemesterConfig(this.selectedDate);
-            this.viewModel.calculateCurrentWeekFromToday();
             this.navPathStack.pop();
           })
 

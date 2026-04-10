@@ -5,6 +5,7 @@ import { Constants } from '../common/constants/Constants';
 import { CourseCard } from '../components/CourseCard';
 import { WeekHeader } from '../components/WeekHeader';
 import { TimeSlotHeader } from '../components/TimeSlotHeader';
+import { DayView } from '../components/DayView';
 import { SemesterSettingPage } from './SemesterSettingPage';
 
 @Entry
@@ -12,6 +13,7 @@ import { SemesterSettingPage } from './SemesterSettingPage';
 struct Index {
   @State viewModel: CourseViewModel = new CourseViewModel();
   navPathStack: NavPathStack = new NavPathStack();
+  @State showWeekPicker: boolean = false;
 
   aboutToAppear(): void {
     this.viewModel.init(this.getUIContext().getHostContext() as Context);
@@ -21,11 +23,33 @@ struct Index {
     Navigation(this.navPathStack) {
       Column() {
         Row() {
-          Text('Easy课程表')
-            .fontSize(22)
-            .fontWeight(FontWeight.Bold)
+          Text('<')
+            .fontSize(20)
             .fontColor('#333333')
-            .layoutWeight(1)
+            .fontWeight(FontWeight.Bold)
+            .padding({ left: 16, right: 8 })
+            .onClick(() => {
+              this.viewModel.prevWeek();
+            })
+
+          Text('第' + this.viewModel.currentWeek + '周')
+            .fontSize(20)
+            .fontColor('#333333')
+            .fontWeight(FontWeight.Bold)
+            .onClick(() => {
+              this.showWeekPicker = true;
+            })
+
+          Text('>')
+            .fontSize(20)
+            .fontColor('#333333')
+            .fontWeight(FontWeight.Bold)
+            .padding({ left: 8, right: 8 })
+            .onClick(() => {
+              this.viewModel.nextWeek();
+            })
+
+          Blank()
 
           Button('+ 添加')
             .fontSize(14)
@@ -41,83 +65,144 @@ struct Index {
               });
             })
 
-          Text('⚙')
-            .fontSize(20)
-            .fontColor('#333333')
-            .margin({ left: 12 })
-            .onClick(() => {
-              this.navPathStack.pushPath({ name: 'SemesterSettingPage' });
-            })
+          Button() {
+            Image($r('app.media.ic_public_settings'))
+              .width(24)
+          }
+          .type(ButtonType.Circle)
+          .width(36)
+          .height(36)
+          .backgroundColor('#E0E0E0')
+          .margin({ left: 12 })
+          .onClick(() => {
+            this.navPathStack.pushPath({ name: 'SemesterSettingPage' });
+          })
         }
         .width('100%')
-        .padding({ left: 16, right: 16, top: 12, bottom: 8 })
+        .padding({ left: 0, right: 16, top: 12, bottom: 8 })
         .alignItems(VerticalAlign.Center)
 
-        WeekHeader({ currentWeek: this.viewModel.currentWeek, semesterStartDate: this.viewModel.semesterStartDate })
-
-        Column() {
-          Row() {
-            Text('<')
-              .fontSize(18)
-              .fontColor('#333333')
-              .padding({ left: 16, right: 8 })
-              .onClick(() => {
-                this.viewModel.prevWeek();
-              })
-
-            Column() {
-              Text('第' + this.viewModel.currentWeek + '周')
-                .fontSize(16)
-                .fontColor('#333333')
-                .fontWeight(FontWeight.Bold)
-
-              if (this.viewModel.semesterStartDate !== '') {
-                Text(this.viewModel.getWeekDateRange())
-                  .fontSize(12)
-                  .fontColor('#999999')
-                  .margin({ top: 2 })
-              }
+        if (this.viewModel.viewMode === 'week') {
+          WeekHeader({
+            currentWeek: this.viewModel.currentWeek,
+            semesterStartDate: this.viewModel.semesterStartDate,
+            monthOfWeek: this.viewModel.getMonthOfWeek(),
+            onDateClick: (weekDay: number) => {
+              this.viewModel.switchToDayView(weekDay);
             }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Center)
+          })
 
-            Text('>')
-              .fontSize(18)
-              .fontColor('#333333')
-              .padding({ left: 8, right: 8 })
-              .onClick(() => {
-                this.viewModel.nextWeek();
-              })
+          Scroll() {
+            Row() {
+              TimeSlotHeader()
 
-            Text('今天')
-              .fontSize(12)
-              .fontColor('#4CAF50')
-              .padding({ left: 8, right: 16 })
-              .onClick(() => {
-                this.viewModel.goToToday();
-              })
+              Row() {
+                ForEach(getWeekDayList(), (day: WeekDay) => {
+                  this.DayColumn(day);
+                }, (day: WeekDay) => day.toString())
+              }
+              .layoutWeight(1)
+            }
           }
-          .width('100%')
-          .height(this.viewModel.semesterStartDate !== '' ? 56 : Constants.HEADER_HEIGHT)
-          .alignItems(VerticalAlign.Center)
-          .backgroundColor(Color.White)
+          .scrollable(ScrollDirection.Vertical)
+          .scrollBar(BarState.Auto)
+          .layoutWeight(1)
+        } else {
+          DayView({
+            selectedWeekDay: this.viewModel.selectedWeekDay,
+            currentWeek: this.viewModel.currentWeek,
+            viewModel: this.viewModel,
+            onBack: () => {
+              this.viewModel.switchToWeekView();
+            },
+            onCourseClick: (course: CourseInfo) => {
+              this.navPathStack.pushPath({
+                name: 'CourseDetailPage',
+                param: course
+              });
+            },
+            onSlotClick: (slot: number) => {
+              let newCourse = CourseInfo.createDefault();
+              newCourse.weekDay = this.viewModel.selectedWeekDay;
+              newCourse.startSlot = slot;
+              newCourse.endSlot = slot;
+              newCourse.startWeek = this.viewModel.currentWeek;
+              newCourse.endWeek = this.viewModel.currentWeek;
+              this.navPathStack.pushPath({
+                name: 'CourseEditPage',
+                param: newCourse
+              });
+            }
+          })
         }
 
-        Scroll() {
-          Row() {
-            TimeSlotHeader()
+        if (this.showWeekPicker) {
+          Column() {
+            Row() {
+              Text('选择周次')
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#333333')
+                .layoutWeight(1)
+
+              Text('✕')
+                .fontSize(20)
+                .fontColor('#999999')
+                .onClick(() => {
+                  this.showWeekPicker = false;
+                })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 16, bottom: 12 })
+            .alignItems(VerticalAlign.Center)
+
+            Scroll() {
+              Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start }) {
+                ForEach(Array.from({ length: Constants.TOTAL_WEEKS }, (_v: Object, k: number) => k + 1), (week: number) => {
+                  Column() {
+                    Text('第' + week + '周')
+                      .fontSize(14)
+                      .fontColor(week === this.viewModel.currentWeek ? Color.White : '#333333')
+                  }
+                  .width(72)
+                  .height(40)
+                  .borderRadius(8)
+                  .backgroundColor(week === this.viewModel.currentWeek ? '#4CAF50' : '#F0F0F0')
+                  .justifyContent(FlexAlign.Center)
+                  .margin(6)
+                  .onClick(() => {
+                    this.viewModel.currentWeek = week;
+                    this.showWeekPicker = false;
+                  })
+                }, (week: number) => week.toString())
+              }
+              .padding({ left: 10, right: 10 })
+            }
+            .layoutWeight(1)
+            .scrollBar(BarState.Auto)
 
             Row() {
-              ForEach(getWeekDayList(), (day: WeekDay) => {
-                this.DayColumn(day);
-              }, (day: WeekDay) => day.toString())
+              Button('今天')
+                .fontSize(16)
+                .fontColor(Color.White)
+                .backgroundColor('#4CAF50')
+                .borderRadius(8)
+                .width('100%')
+                .height(44)
+                .onClick(() => {
+                  this.viewModel.goToToday();
+                  this.showWeekPicker = false;
+                })
             }
-            .layoutWeight(1)
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 12, bottom: 16 })
           }
+          .width('100%')
+          .height(360)
+          .backgroundColor(Color.White)
+          .borderRadius({ topLeft: 16, topRight: 16 })
+          .shadow({ radius: 20, color: '#33000000', offsetY: -4 })
         }
-        .scrollable(ScrollDirection.Vertical)
-        .scrollBar(BarState.Auto)
-        .layoutWeight(1)
       }
       .width('100%')
       .height('100%')

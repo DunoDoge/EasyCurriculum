@@ -9,6 +9,8 @@ export class CourseViewModel {
   courses: CourseInfo[] = [];
   currentWeek: number = 1;
   semesterStartDate: string = '';
+  viewMode: string = 'week';
+  selectedWeekDay: number = 0;
   private prefs: preferences.Preferences | null = null;
 
   async init(context: Context): Promise<void> {
@@ -162,6 +164,60 @@ export class CourseViewModel {
 
   goToToday(): void {
     this.calculateCurrentWeekFromToday();
+  }
+
+  switchToDayView(weekDay: number): void {
+    this.viewMode = 'day';
+    this.selectedWeekDay = weekDay;
+  }
+
+  switchToWeekView(): void {
+    this.viewMode = 'week';
+    this.selectedWeekDay = 0;
+  }
+
+  getMonthOfWeek(): number {
+    if (this.semesterStartDate === '') {
+      return 0;
+    }
+    let parts: string[] = this.semesterStartDate.split('-');
+    let startYear = Number(parts[0]);
+    let startMonth = Number(parts[1]) - 1;
+    let startDay = Number(parts[2]);
+    let startDate = new Date(startYear, startMonth, startDay);
+    let weekStartOffset = (this.currentWeek - 1) * 7;
+    let mondayDate = new Date(startDate.getTime() + weekStartOffset * 24 * 60 * 60 * 1000);
+    return mondayDate.getMonth() + 1;
+  }
+
+  getDayDateOfMonth(weekDay: number): number {
+    if (this.semesterStartDate === '') {
+      return 0;
+    }
+    let parts: string[] = this.semesterStartDate.split('-');
+    let startYear = Number(parts[0]);
+    let startMonth = Number(parts[1]) - 1;
+    let startDay = Number(parts[2]);
+    let startDate = new Date(startYear, startMonth, startDay);
+    let offsetDays = (this.currentWeek - 1) * 7 + (weekDay - 1);
+    let targetDate = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
+    return targetDate.getDate();
+  }
+
+  getDayFullDate(): string {
+    if (this.semesterStartDate === '') {
+      return '';
+    }
+    let parts: string[] = this.semesterStartDate.split('-');
+    let startYear = Number(parts[0]);
+    let startMonth = Number(parts[1]) - 1;
+    let startDay = Number(parts[2]);
+    let startDate = new Date(startYear, startMonth, startDay);
+    let offsetDays = (this.currentWeek - 1) * 7 + (this.selectedWeekDay - 1);
+    let targetDate = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
+    let month = targetDate.getMonth() + 1;
+    let day = targetDate.getDate();
+    return month + '月' + day + '日';
   }
 
   async saveCourses(): Promise<void> {

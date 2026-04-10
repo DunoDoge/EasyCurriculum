@@ -3,8 +3,10 @@ import { Constants } from '../common/constants/Constants';
 
 @Component
 export struct WeekHeader {
-  currentWeek: number = 1;
-  semesterStartDate: string = '';
+  @Prop currentWeek: number = 1;
+  @Prop semesterStartDate: string = '';
+  @Prop monthOfWeek: number = 0;
+  onDateClick: (weekDay: number) => void = (_weekDay: number) => {};
 
   private getDayDate(weekDay: number): string {
     if (this.semesterStartDate === '') {
@@ -17,9 +19,8 @@ export struct WeekHeader {
     let startDate: Date = new Date(year, month, day);
     let offsetDays: number = (this.currentWeek - 1) * 7 + (weekDay - 1);
     let targetDate: Date = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
-    let targetMonth: number = targetDate.getMonth() + 1;
     let targetDay: number = targetDate.getDate();
-    return targetMonth.toString() + '/' + targetDay.toString();
+    return targetDay.toString();
   }
 
   private isToday(weekDay: number): boolean {
@@ -35,18 +36,28 @@ export struct WeekHeader {
     let targetDate: Date = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
     let today: Date = new Date();
     return targetDate.getFullYear() === today.getFullYear() &&
-      targetDate.getMonth() === today.getMonth() &&
-      targetDate.getDate() === today.getDate();
+      today.getMonth() === targetDate.getMonth() &&
+      today.getDate() === targetDate.getDate();
   }
 
   build() {
     Row() {
       Column() {
-        Text('')
-          .fontSize(0)
+        if (this.semesterStartDate !== '') {
+          Text(this.monthOfWeek.toString())
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#333333')
+          Text('月')
+            .fontSize(10)
+            .fontColor('#999999')
+            .margin({ top: 2 })
+        }
       }
       .width(Constants.TIME_HEADER_WIDTH)
       .height(Constants.HEADER_HEIGHT + 16)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
 
       ForEach(getWeekDayList(), (day: WeekDay) => {
         Column() {
@@ -57,6 +68,7 @@ export struct WeekHeader {
           if (this.semesterStartDate !== '') {
             Text(this.getDayDate(day as number))
               .fontSize(10)
+              .fontWeight(this.isToday(day as number) ? FontWeight.Bold : FontWeight.Medium)
               .fontColor(this.isToday(day as number) ? '#4CAF50' : '#999999')
               .margin({ top: 2 })
           }
@@ -65,6 +77,9 @@ export struct WeekHeader {
         .height(Constants.HEADER_HEIGHT + 16)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
+        .onClick(() => {
+          this.onDateClick(day as number);
+        })
       }, (day: WeekDay) => day.toString())
     }
     .width('100%')
