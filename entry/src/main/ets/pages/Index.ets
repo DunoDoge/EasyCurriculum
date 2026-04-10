@@ -423,7 +423,7 @@ struct CourseEditPage {
     } else {
       this.viewModel.updateCourse(course);
     }
-    this.navPathStack.pop();
+    this.navPathStack.clear();
   }
 }
 
