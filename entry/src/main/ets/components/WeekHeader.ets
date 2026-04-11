@@ -6,6 +6,7 @@ export struct WeekHeader {
   @Prop currentWeek: number = 1;
   @Prop semesterStartDate: string = '';
   @Prop monthOfWeek: number = 0;
+  @Prop showWeekend: boolean = true;
   onDateClick: (weekDay: number) => void = (_weekDay: number) => {};
 
   private getDayDate(weekDay: number): string {
@@ -59,7 +60,7 @@ export struct WeekHeader {
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
 
-      ForEach(getWeekDayList(), (day: WeekDay) => {
+      ForEach(getWeekDayList(this.showWeekend), (day: WeekDay) => {
         Column() {
           Text(getWeekDayName(day))
             .fontSize(14)

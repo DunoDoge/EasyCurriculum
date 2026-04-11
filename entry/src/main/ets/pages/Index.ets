@@ -8,6 +8,7 @@ import { TimeSlotHeader } from '../components/TimeSlotHeader';
 import { DayView } from '../components/DayView';
 import { SemesterSettingPage } from './SemesterSettingPage';
 import { Timetable } from '../model/CourseModel';
+import { promptAction } from '@kit.ArkUI';
 
 @Entry
 @Component
@@ -112,6 +113,7 @@ struct Index {
             currentWeek: this.viewModel.currentWeek,
             semesterStartDate: this.viewModel.semesterStartDate,
             monthOfWeek: this.viewModel.getMonthOfWeek(),
+            showWeekend: this.viewModel.currentTimetable?.showWeekend ?? true,
             onDateClick: (weekDay: number) => {
               this.viewModel.switchToDayView(weekDay);
             }
@@ -122,7 +124,7 @@ struct Index {
               TimeSlotHeader()
 
               Row() {
-                ForEach(getWeekDayList(), (day: WeekDay) => {
+                ForEach(getWeekDayList(this.viewModel.currentTimetable?.showWeekend ?? true), (day: WeekDay) => {
                   this.DayColumn(day);
                 }, (day: WeekDay) => day.toString())
               }
@@ -363,13 +365,15 @@ struct Index {
                 .height(44)
                 .margin({ left: 12 })
                 .onClick(() => {
-                  if (this.newTimetableName.trim() !== '') {
-                    let newTimetable = this.viewModel.createTimetableSync(this.newTimetableName.trim(), '');
-                    this.viewModel.switchTimetable(newTimetable.id);
-                    this.showNewTimetableDialog = false;
-                    this.newTimetableName = '';
-                    this.navPathStack.pushPath({ name: 'SemesterSettingPage' });
+                  if (this.newTimetableName.trim() === '') {
+                    promptAction.showToast({ message: '请输入课表名称' });
+                    return;
                   }
+                  let newTimetable = this.viewModel.createTimetableSync(this.newTimetableName.trim(), '');
+                  this.viewModel.switchTimetable(newTimetable.id);
+                  this.showNewTimetableDialog = false;
+                  this.newTimetableName = '';
+                  this.navPathStack.pushPath({ name: 'SemesterSettingPage' });
                 })
             }
             .width('100%')
@@ -805,6 +809,7 @@ struct CourseEditPage {
 
   private saveCourse(): void {
     if (this.inputName.trim() === '') {
+      promptAction.showToast({ message: '请输入课程名称' });
       return;
     }
     let course = new CourseInfo(
@@ -821,6 +826,7 @@ struct CourseEditPage {
       this.selectedWeekType
     );
     if (this.viewModel.hasConflict(course, this.course.id)) {
+      promptAction.showToast({ message: '课程时间冲突，请重新选择' });
       return;
     }
     if (this.course.id === '') {

@@ -220,11 +220,14 @@ export class CourseViewModel {
     Logger.info('Deleted timetable, remaining count: ' + this.timetables.length);
   }
 
-  async updateTimetable(timetableId: string, name: string, semesterStartDate: string): Promise<void> {
+  async updateTimetable(timetableId: string, name: string, semesterStartDate: string, showWeekend?: boolean): Promise<void> {
     for (let i = 0; i < this.timetables.length; i++) {
       if (this.timetables[i].id === timetableId) {
         this.timetables[i].name = name;
         this.timetables[i].semesterStartDate = semesterStartDate;
+        if (showWeekend !== undefined) {
+          this.timetables[i].showWeekend = showWeekend;
+        }
 
         if (this.currentTimetableId === timetableId) {
           this.currentTimetable = this.timetables[i];

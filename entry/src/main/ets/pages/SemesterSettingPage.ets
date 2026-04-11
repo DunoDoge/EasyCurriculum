@@ -11,14 +11,17 @@ export struct SemesterSettingPage {
   @State selectedMonth: number = 1;
   @State selectedDay: number = 1;
   @State showDeleteConfirm: boolean = false;
+  @State showWeekend: boolean = true;
 
   aboutToAppear(): void {
     if (this.viewModel.currentTimetable !== null) {
       this.timetableName = this.viewModel.currentTimetable.name;
       this.selectedDate = this.viewModel.currentTimetable.semesterStartDate;
+      this.showWeekend = this.viewModel.currentTimetable.showWeekend;
     } else {
       this.timetableName = '我的课表';
       this.selectedDate = '';
+      this.showWeekend = true;
     }
 
     if (this.selectedDate !== '') {
@@ -45,12 +48,6 @@ export struct SemesterSettingPage {
     NavDestination() {
       Scroll() {
         Column() {
-          Text('课表设置')
-            .fontSize(20)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#333333')
-            .margin({ bottom: 24 })
-
           Column() {
             Text('课表名称')
               .fontSize(14)
@@ -108,6 +105,34 @@ export struct SemesterSettingPage {
           .borderRadius(12)
           .margin({ bottom: 16 })
 
+          Column() {
+            Row() {
+              Text('显示周末课程')
+                .fontSize(16)
+                .fontColor('#333333')
+                .layoutWeight(1)
+
+              Toggle({ type: ToggleType.Switch, isOn: this.showWeekend })
+                .selectedColor('#4CAF50')
+                .onChange((isOn: boolean) => {
+                  this.showWeekend = isOn;
+                })
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+
+            Text('关闭后将只显示周一到周五的课程')
+              .fontSize(12)
+              .fontColor('#999999')
+              .margin({ top: 4 })
+              .alignSelf(ItemAlign.Start)
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+          .backgroundColor(Color.White)
+          .borderRadius(12)
+          .margin({ bottom: 16 })
+
           if (this.viewModel.timetables.length > 1) {
             Button('删除课表')
               .fontSize(16)
@@ -151,7 +176,8 @@ export struct SemesterSettingPage {
                   await this.viewModel.updateTimetable(
                     this.viewModel.currentTimetable.id,
                     this.timetableName.trim(),
-                    this.selectedDate
+                    this.selectedDate,
+                    this.showWeekend
                   );
                 }
                 this.navPathStack.pop();

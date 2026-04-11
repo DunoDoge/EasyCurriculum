@@ -21,14 +21,24 @@ export function getWeekDayName(day: WeekDay): string {
   return names[day];
 }
 
-export function getWeekDayList(): WeekDay[] {
-  return [
-    WeekDay.MONDAY,
-    WeekDay.TUESDAY,
-    WeekDay.WEDNESDAY,
-    WeekDay.THURSDAY,
-    WeekDay.FRIDAY,
-    WeekDay.SATURDAY,
-    WeekDay.SUNDAY
-  ];
+export function getWeekDayList(showWeekend: boolean = true): WeekDay[] {
+  if (showWeekend) {
+    return [
+      WeekDay.MONDAY,
+      WeekDay.TUESDAY,
+      WeekDay.WEDNESDAY,
+      WeekDay.THURSDAY,
+      WeekDay.FRIDAY,
+      WeekDay.SATURDAY,
+      WeekDay.SUNDAY
+    ];
+  } else {
+    return [
+      WeekDay.MONDAY,
+      WeekDay.TUESDAY,
+      WeekDay.WEDNESDAY,
+      WeekDay.THURSDAY,
+      WeekDay.FRIDAY
+    ];
+  }
 }

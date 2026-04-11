@@ -133,12 +133,14 @@ export class Timetable {
   semesterStartDate: string = '';
   courses: CourseInfo[] = [];
   isDefault: boolean = false;
+  showWeekend: boolean = true;
 
-  constructor(id: string, name: string, semesterStartDate: string, isDefault: boolean) {
+  constructor(id: string, name: string, semesterStartDate: string, isDefault: boolean, showWeekend: boolean = true) {
     this.id = id;
     this.name = name;
     this.semesterStartDate = semesterStartDate;
     this.isDefault = isDefault;
+    this.showWeekend = showWeekend;
   }
 
   toJson(): Record<string, Object> {
@@ -151,7 +153,8 @@ export class Timetable {
       'name': this.name,
       'semesterStartDate': this.semesterStartDate,
       'courses': courseJsonArray,
-      'isDefault': this.isDefault
+      'isDefault': this.isDefault,
+      'showWeekend': this.showWeekend
     } as Record<string, Object>;
   }
 
@@ -160,7 +163,11 @@ export class Timetable {
     let name = json['name'] as string;
     let semesterStartDate = json['semesterStartDate'] as string;
     let isDefault = json['isDefault'] as boolean;
-    let timetable = new Timetable(id, name, semesterStartDate, isDefault);
+    let showWeekend = json['showWeekend'] as boolean;
+    if (showWeekend === undefined) {
+      showWeekend = true;
+    }
+    let timetable = new Timetable(id, name, semesterStartDate, isDefault, showWeekend);
 
     let coursesArray = json['courses'];
     if (coursesArray !== undefined && coursesArray !== null) {
@@ -174,7 +181,7 @@ export class Timetable {
   }
 
   static createDefault(): Timetable {
-    let timetable = new Timetable('', '我的课表', '', true);
+    let timetable = new Timetable('', '我的课表', '', true, true);
     return timetable;
   }
 
