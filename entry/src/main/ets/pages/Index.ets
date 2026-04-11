@@ -7,6 +7,7 @@ import { WeekHeader } from '../components/WeekHeader';
 import { TimeSlotHeader } from '../components/TimeSlotHeader';
 import { DayView } from '../components/DayView';
 import { SemesterSettingPage } from './SemesterSettingPage';
+import { Timetable } from '../model/CourseModel';
 
 @Entry
 @Component
@@ -14,6 +15,9 @@ struct Index {
   @State viewModel: CourseViewModel = new CourseViewModel();
   navPathStack: NavPathStack = new NavPathStack();
   @State showWeekPicker: boolean = false;
+  @State showTimetablePicker: boolean = false;
+  @State showNewTimetableDialog: boolean = false;
+  @State newTimetableName: string = '';
 
   aboutToAppear(): void {
     this.viewModel.init(this.getUIContext().getHostContext() as Context);
@@ -23,14 +27,35 @@ struct Index {
     Navigation(this.navPathStack) {
       Column() {
         Row() {
-          Text('<')
-            .fontSize(20)
-            .fontColor('#333333')
-            .fontWeight(FontWeight.Bold)
-            .padding({ left: 16, right: 8 })
-            .onClick(() => {
-              this.viewModel.prevWeek();
-            })
+          Row() {
+            Text(this.viewModel.currentTimetableName)
+              .fontSize(16)
+              .fontColor('#333333')
+              .fontWeight(FontWeight.Medium)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .constraintSize({ maxWidth: 120 })
+
+            Text('▼')
+              .fontSize(10)
+              .fontColor('#666666')
+              .margin({ left: 4 })
+          }
+          .padding({ left: 16, right: 8 })
+          .onClick(() => {
+            this.showTimetablePicker = true;
+          })
+
+          Blank()
+
+          // Text('<')
+          //   .fontSize(20)
+          //   .fontColor('#333333')
+          //   .fontWeight(FontWeight.Bold)
+          //   .padding({ left: 8, right: 8 })
+          //   .onClick(() => {
+          //     this.viewModel.prevWeek();
+          //   })
 
           Text('第' + this.viewModel.currentWeek + '周')
             .fontSize(20)
@@ -40,14 +65,14 @@ struct Index {
               this.showWeekPicker = true;
             })
 
-          Text('>')
-            .fontSize(20)
-            .fontColor('#333333')
-            .fontWeight(FontWeight.Bold)
-            .padding({ left: 8, right: 8 })
-            .onClick(() => {
-              this.viewModel.nextWeek();
-            })
+          // Text('>')
+          //   .fontSize(20)
+          //   .fontColor('#333333')
+          //   .fontWeight(FontWeight.Bold)
+          //   .padding({ left: 8, right: 8 })
+          //   .onClick(() => {
+          //     this.viewModel.nextWeek();
+          //   })
 
           Blank()
 
@@ -199,6 +224,159 @@ struct Index {
           }
           .width('100%')
           .height(360)
+          .backgroundColor(Color.White)
+          .borderRadius({ topLeft: 16, topRight: 16 })
+          .shadow({ radius: 20, color: '#33000000', offsetY: -4 })
+        }
+
+        if (this.showTimetablePicker) {
+          Column() {
+            Row() {
+              Text('选择课表')
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#333333')
+                .layoutWeight(1)
+
+              Text('✕')
+                .fontSize(20)
+                .fontColor('#999999')
+                .onClick(() => {
+                  this.showTimetablePicker = false;
+                })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 16, bottom: 12 })
+            .alignItems(VerticalAlign.Center)
+
+            Scroll() {
+              Column() {
+                ForEach(this.viewModel.timetables, (timetable: Timetable) => {
+                  Row() {
+                    Text(timetable.name)
+                      .fontSize(16)
+                      .fontColor(timetable.id === this.viewModel.currentTimetableId ? '#4CAF50' : '#333333')
+                      .layoutWeight(1)
+
+                    if (timetable.id === this.viewModel.currentTimetableId) {
+                      Text('✓')
+                        .fontSize(16)
+                        .fontColor('#4CAF50')
+                    }
+                  }
+                  .width('100%')
+                  .height(48)
+                  .padding({ left: 16, right: 16 })
+                  .backgroundColor(timetable.id === this.viewModel.currentTimetableId ? '#E8F5E9' : Color.Transparent)
+                  .borderRadius(8)
+                  .onClick(() => {
+                    this.viewModel.switchTimetable(timetable.id);
+                    this.showTimetablePicker = false;
+                  })
+                }, (timetable: Timetable) => timetable.id)
+              }
+              .padding({ left: 16, right: 16 })
+            }
+            .layoutWeight(1)
+            .scrollBar(BarState.Auto)
+
+            Row() {
+              Button('新建课表')
+                .fontSize(16)
+                .fontColor(Color.White)
+                .backgroundColor('#4CAF50')
+                .borderRadius(8)
+                .width('100%')
+                .height(44)
+                .onClick(() => {
+                  this.showTimetablePicker = false;
+                  this.showNewTimetableDialog = true;
+                })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 12, bottom: 16 })
+          }
+          .width('100%')
+          .height(400)
+          .backgroundColor(Color.White)
+          .borderRadius({ topLeft: 16, topRight: 16 })
+          .shadow({ radius: 20, color: '#33000000', offsetY: -4 })
+        }
+
+        if (this.showNewTimetableDialog) {
+          Column() {
+            Row() {
+              Text('新建课表')
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#333333')
+                .layoutWeight(1)
+
+              Text('✕')
+                .fontSize(20)
+                .fontColor('#999999')
+                .onClick(() => {
+                  this.showNewTimetableDialog = false;
+                  this.newTimetableName = '';
+                })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, top: 16, bottom: 12 })
+            .alignItems(VerticalAlign.Center)
+
+            Text('课表名称')
+              .fontSize(14)
+              .fontColor('#666666')
+              .width('100%')
+              .padding({ left: 16, right: 16, bottom: 8 })
+
+            TextInput({ placeholder: '请输入课表名称', text: this.newTimetableName })
+              .fontSize(16)
+              .width('100%')
+              .height(44)
+              .borderRadius(8)
+              .backgroundColor('#F5F5F5')
+              .margin({ left: 16, right: 16, bottom: 16 })
+              .onChange((value: string) => {
+                this.newTimetableName = value;
+              })
+
+            Row() {
+              Button('取消')
+                .fontSize(16)
+                .fontColor('#666666')
+                .backgroundColor('#E0E0E0')
+                .borderRadius(8)
+                .layoutWeight(1)
+                .height(44)
+                .onClick(() => {
+                  this.showNewTimetableDialog = false;
+                  this.newTimetableName = '';
+                })
+
+              Button('创建')
+                .fontSize(16)
+                .fontColor(Color.White)
+                .backgroundColor('#4CAF50')
+                .borderRadius(8)
+                .layoutWeight(1)
+                .height(44)
+                .margin({ left: 12 })
+                .onClick(() => {
+                  if (this.newTimetableName.trim() !== '') {
+                    let newTimetable = this.viewModel.createTimetableSync(this.newTimetableName.trim(), '');
+                    this.viewModel.switchTimetable(newTimetable.id);
+                    this.showNewTimetableDialog = false;
+                    this.newTimetableName = '';
+                    this.navPathStack.pushPath({ name: 'SemesterSettingPage' });
+                  }
+                })
+            }
+            .width('100%')
+            .padding({ left: 16, right: 16, bottom: 16 })
+          }
+          .width('100%')
+          .height(280)
           .backgroundColor(Color.White)
           .borderRadius({ topLeft: 16, topRight: 16 })
           .shadow({ radius: 20, color: '#33000000', offsetY: -4 })

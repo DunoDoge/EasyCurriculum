@@ -125,3 +125,60 @@ export class SemesterConfig {
     return new SemesterConfig('');
   }
 }
+
+@Observed
+export class Timetable {
+  id: string = '';
+  name: string = '';
+  semesterStartDate: string = '';
+  courses: CourseInfo[] = [];
+  isDefault: boolean = false;
+
+  constructor(id: string, name: string, semesterStartDate: string, isDefault: boolean) {
+    this.id = id;
+    this.name = name;
+    this.semesterStartDate = semesterStartDate;
+    this.isDefault = isDefault;
+  }
+
+  toJson(): Record<string, Object> {
+    let courseJsonArray: Record<string, Object>[] = [];
+    for (let i = 0; i < this.courses.length; i++) {
+      courseJsonArray.push(this.courses[i].toJson());
+    }
+    return {
+      'id': this.id,
+      'name': this.name,
+      'semesterStartDate': this.semesterStartDate,
+      'courses': courseJsonArray,
+      'isDefault': this.isDefault
+    } as Record<string, Object>;
+  }
+
+  static fromJson(json: Record<string, Object>): Timetable {
+    let id = json['id'] as string;
+    let name = json['name'] as string;
+    let semesterStartDate = json['semesterStartDate'] as string;
+    let isDefault = json['isDefault'] as boolean;
+    let timetable = new Timetable(id, name, semesterStartDate, isDefault);
+
+    let coursesArray = json['courses'];
+    if (coursesArray !== undefined && coursesArray !== null) {
+      let courseJsonArray: Record<string, Object>[] = coursesArray as Record<string, Object>[];
+      for (let i = 0; i < courseJsonArray.length; i++) {
+        let course = CourseInfo.fromJson(courseJsonArray[i]);
+        timetable.courses.push(course);
+      }
+    }
+    return timetable;
+  }
+
+  static createDefault(): Timetable {
+    let timetable = new Timetable('', '我的课表', '', true);
+    return timetable;
+  }
+
+  static generateId(): string {
+    return Date.now().toString() + Math.floor(Math.random() * 1000).toString();
+  }
+}

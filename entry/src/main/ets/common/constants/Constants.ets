@@ -11,6 +11,8 @@ export class Constants {
   static readonly COURSE_DATA_KEY: string = 'course_data';
   static readonly SEMESTER_CONFIG_KEY: string = 'semester_config';
   static readonly TOTAL_WEEKS: number = 20;
+  static readonly TIMETABLES_KEY: string = 'timetables';
+  static readonly CURRENT_TIMETABLE_ID_KEY: string = 'current_timetable_id';
 
   static readonly SLOT_TIMES: Record<number, string> = {
     1: '08:00',
