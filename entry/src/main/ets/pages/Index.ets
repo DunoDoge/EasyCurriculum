@@ -47,8 +47,6 @@ struct Index {
             this.showTimetablePicker = true;
           })
 
-          Blank()
-
           Text('第' + this.viewModel.currentWeek + '周')
             .fontSize(20)
             .fontColor('#333333')
@@ -59,18 +57,20 @@ struct Index {
 
           Blank()
 
-          Button('+ 添加')
-            .fontSize(14)
-            .fontColor(Color.White)
-            .backgroundColor('#9ACAF8')
-            .borderRadius(20)
-            .height(36)
-            .padding({ left: 16, right: 16 })
-            .onClick(() => {
-              this.navPathStack.pushPath({
-                name: 'CourseEditPage',
-                param: CourseInfo.createDefault()
-              });
+          Button() {
+            Image($r('app.media.ic_public_add'))
+              .width(24)
+          }
+          .type(ButtonType.Circle)
+          .width(36)
+          .height(36)
+          .backgroundColor('#9ACAF8')
+          .margin({ left: 12 })
+          .onClick(() => {
+            this.navPathStack.pushPath({
+              name: 'CourseEditPage',
+              param: CourseInfo.createDefault()
+            });
             })
 
           Button() {

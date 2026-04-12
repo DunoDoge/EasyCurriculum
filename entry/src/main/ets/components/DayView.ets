@@ -2,8 +2,7 @@ import { CourseInfo } from '../model/CourseModel';
 import { WeekDay, getWeekDayName } from '../model/WeekDay';
 import { Constants } from '../common/constants/Constants';
 import { CourseViewModel } from '../viewmodel/CourseViewModel';
-import { CourseCard } from './CourseCard';
-import { TimeSlotHeader } from './TimeSlotHeader';
+import { DayCourseCard } from './DayCourseCard';
 
 @Component
 export struct DayView {
@@ -16,6 +15,7 @@ export struct DayView {
 
   build() {
     Column() {
+      // 顶部标题栏
       Row() {
         Text('←')
           .fontSize(22)
@@ -41,43 +41,24 @@ export struct DayView {
       .padding({ left: 16, right: 16 })
       .alignItems(VerticalAlign.Center)
 
+      // 课程列表区域
       Scroll() {
-        Row() {
-          TimeSlotHeader()
-
-          Stack() {
-            Column() {
-              ForEach(Array.from({ length: Constants.TOTAL_SLOTS }, (_v: Object, k: number) => k + 1), (slot: number) => {
-                Column() {}
-                  .width('100%')
-                  .height(Constants.SLOT_HEIGHT)
-                  .borderWidth(0.5)
-                  .borderColor('#E0E0E0')
-                  .backgroundColor(Color.White)
-                  .onClick(() => {
-                    if (this.viewModel.getCourseAtSlot(this.selectedWeekDay, slot) === undefined) {
-                      this.onSlotClick(slot);
-                    }
-                  })
-              }, (slot: number) => slot.toString())
-            }
-
-            ForEach(this.viewModel.getCoursesByDay(this.selectedWeekDay), (course: CourseInfo) => {
-              CourseCard({
-                course: course,
-                onCardClick: (clickedCourse: CourseInfo) => {
-                  this.onCourseClick(clickedCourse);
-                }
-              })
-            }, (course: CourseInfo) => course.id)
-          }
-          .layoutWeight(1)
-          .height(Constants.TOTAL_SLOTS * Constants.SLOT_HEIGHT)
-          .clip(false)
+        Column() {
+          ForEach(this.viewModel.getCoursesByDay(this.selectedWeekDay), (course: CourseInfo) => {
+            DayCourseCard({
+              course: course,
+              onCardClick: (clickedCourse: CourseInfo) => {
+                this.onCourseClick(clickedCourse);
+              }
+            })
+          }, (course: CourseInfo) => course.id)
         }
+        .width('100%')
+        .alignItems(HorizontalAlign.Start)
       }
       .layoutWeight(1)
       .scrollBar(BarState.Auto)
+      .align(Alignment.Top)
     }
     .width('100%')
     .height('100%')

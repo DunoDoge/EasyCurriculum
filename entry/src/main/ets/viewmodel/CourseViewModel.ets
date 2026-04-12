@@ -477,6 +477,7 @@ export class CourseViewModel {
         result.push(this.currentTimetable.courses[i]);
       }
     }
+    result.sort((a: CourseInfo, b: CourseInfo) => a.startSlot - b.startSlot);
     return result;
   }
 
