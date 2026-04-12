@@ -487,15 +487,11 @@ struct CourseEditPage {
 
           this.WeekDaySelector();
 
-          this.StartSlotSelector();
-
-          this.EndSlotSelector();
+          this.SlotSelector();
 
           this.WeekTypeSelector();
 
-          this.StartWeekSelector();
-
-          this.EndWeekSelector();
+          this.WeekSelector();
 
           Column() {
             Text('颜色')
@@ -618,73 +614,85 @@ struct CourseEditPage {
   }
 
   @Builder
-  StartSlotSelector() {
+  SlotSelector() {
     Column() {
-      Text('开始节次')
-        .fontSize(14)
-        .fontColor('#333333')
-        .margin({ bottom: 8 })
+      Row() {
+        Column() {
+          Text('开始节次')
+            .fontSize(14)
+            .fontColor('#333333')
+            .margin({ bottom: 8 })
 
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(Array.from({ length: this.viewModel.currentTotalSlots }, (_v: Object, k: number) => k + 1), (slot: number) => {
-          Column() {
-            Text('第' + slot + '节')
-              .fontSize(13)
-              .fontColor(slot === this.selectedStartSlot ? Color.White : '#333333')
-          }
-          .height(36)
-          .padding({ left: 12, right: 12 })
-          .borderRadius(18)
-          .backgroundColor(slot === this.selectedStartSlot ? '#5B9BD5' : '#F0F0F0')
-          .justifyContent(FlexAlign.Center)
-          .margin(4)
-          .onClick(() => {
-            this.selectedStartSlot = slot;
-            if (this.selectedEndSlot < this.selectedStartSlot) {
-              this.selectedEndSlot = this.selectedStartSlot;
-            }
-          })
-        }, (slot: number) => 'start_' + slot.toString())
+          TextPicker({ range: this.getSlotRange(), selected: this.selectedStartSlot - 1 })
+            .height(150)
+            .canLoop(false)
+            .selectedTextStyle({
+              color: '#5B9BD5',
+              font: { size: '18fp', weight: FontWeight.Medium }
+            })
+            .textStyle({
+              color: '#666666',
+              font: { size: '14fp', weight: FontWeight.Regular }
+            })
+            .disappearTextStyle({
+              color: '#999999',
+              font: { size: '12fp', weight: FontWeight.Regular }
+            })
+            .onChange((value: string | string[], index: number | number[]) => {
+              let idx: number = index as number;
+              this.selectedStartSlot = idx + 1;
+              if (this.selectedEndSlot < this.selectedStartSlot) {
+                this.selectedEndSlot = this.selectedStartSlot;
+              }
+            })
+        }
+        .layoutWeight(1)
+        .padding({ right: 8 })
+
+        Column() {
+          Text('结束节次')
+            .fontSize(14)
+            .fontColor('#333333')
+            .margin({ bottom: 8 })
+
+          TextPicker({ range: this.getSlotRange(), selected: this.selectedEndSlot - 1 })
+            .height(150)
+            .canLoop(false)
+            .selectedTextStyle({
+              color: '#5B9BD5',
+              font: { size: '18fp', weight: FontWeight.Medium }
+            })
+            .textStyle({
+              color: '#666666',
+              font: { size: '14fp', weight: FontWeight.Regular }
+            })
+            .disappearTextStyle({
+              color: '#999999',
+              font: { size: '12fp', weight: FontWeight.Regular }
+            })
+            .onChange((value: string | string[], index: number | number[]) => {
+              let idx: number = index as number;
+              this.selectedEndSlot = idx + 1;
+              if (this.selectedEndSlot < this.selectedStartSlot) {
+                this.selectedEndSlot = this.selectedStartSlot;
+              }
+            })
+        }
+        .layoutWeight(1)
+        .padding({ left: 8 })
       }
+      .width('100%')
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-    .alignItems(HorizontalAlign.Start)
   }
 
-  @Builder
-  EndSlotSelector() {
-    Column() {
-      Text('结束节次')
-        .fontSize(14)
-        .fontColor('#333333')
-        .margin({ bottom: 8 })
-
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(Array.from({ length: this.viewModel.currentTotalSlots }, (_v: Object, k: number) => k + 1), (slot: number) => {
-          Column() {
-            Text('第' + slot + '节')
-              .fontSize(13)
-              .fontColor(slot === this.selectedEndSlot ? Color.White : '#333333')
-          }
-          .height(36)
-          .padding({ left: 12, right: 12 })
-          .borderRadius(18)
-          .backgroundColor(slot === this.selectedEndSlot ? '#5B9BD5' : '#F0F0F0')
-          .justifyContent(FlexAlign.Center)
-          .margin(4)
-          .onClick(() => {
-            this.selectedEndSlot = slot;
-            if (this.selectedEndSlot < this.selectedStartSlot) {
-              this.selectedEndSlot = this.selectedStartSlot;
-            }
-          })
-        }, (slot: number) => 'end_' + slot.toString())
-      }
+  private getSlotRange(): string[] {
+    let range: string[] = [];
+    for (let i = 1; i <= this.viewModel.currentTotalSlots; i++) {
+      range.push('第' + i + '节');
     }
-    .width('100%')
-    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-    .alignItems(HorizontalAlign.Start)
+    return range;
   }
 
   @Builder
@@ -720,73 +728,85 @@ struct CourseEditPage {
   }
 
   @Builder
-  StartWeekSelector() {
+  WeekSelector() {
     Column() {
-      Text('开始周次')
-        .fontSize(14)
-        .fontColor('#333333')
-        .margin({ bottom: 8 })
+      Row() {
+        Column() {
+          Text('开始周次')
+            .fontSize(14)
+            .fontColor('#333333')
+            .margin({ bottom: 8 })
 
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(Array.from({ length: this.viewModel.currentTotalWeeks }, (_v: Object, k: number) => k + 1), (week: number) => {
-          Column() {
-            Text('第' + week + '周')
-              .fontSize(12)
-              .fontColor(week === this.selectedStartWeek ? Color.White : '#333333')
-          }
-          .height(32)
-          .padding({ left: 8, right: 8 })
-          .borderRadius(16)
-          .backgroundColor(week === this.selectedStartWeek ? '#5B9BD5' : '#F0F0F0')
-          .justifyContent(FlexAlign.Center)
-          .margin(3)
-          .onClick(() => {
-            this.selectedStartWeek = week;
-            if (this.selectedEndWeek < this.selectedStartWeek) {
-              this.selectedEndWeek = this.selectedStartWeek;
-            }
-          })
-        }, (week: number) => 'startweek_' + week.toString())
+          TextPicker({ range: this.getWeekRange(), selected: this.selectedStartWeek - 1 })
+            .height(150)
+            .canLoop(false)
+            .selectedTextStyle({
+              color: '#5B9BD5',
+              font: { size: '18fp', weight: FontWeight.Medium }
+            })
+            .textStyle({
+              color: '#666666',
+              font: { size: '14fp', weight: FontWeight.Regular }
+            })
+            .disappearTextStyle({
+              color: '#999999',
+              font: { size: '12fp', weight: FontWeight.Regular }
+            })
+            .onChange((value: string | string[], index: number | number[]) => {
+              let idx: number = index as number;
+              this.selectedStartWeek = idx + 1;
+              if (this.selectedEndWeek < this.selectedStartWeek) {
+                this.selectedEndWeek = this.selectedStartWeek;
+              }
+            })
+        }
+        .layoutWeight(1)
+        .padding({ right: 8 })
+
+        Column() {
+          Text('结束周次')
+            .fontSize(14)
+            .fontColor('#333333')
+            .margin({ bottom: 8 })
+
+          TextPicker({ range: this.getWeekRange(), selected: this.selectedEndWeek - 1 })
+            .height(150)
+            .canLoop(false)
+            .selectedTextStyle({
+              color: '#5B9BD5',
+              font: { size: '18fp', weight: FontWeight.Medium }
+            })
+            .textStyle({
+              color: '#666666',
+              font: { size: '14fp', weight: FontWeight.Regular }
+            })
+            .disappearTextStyle({
+              color: '#999999',
+              font: { size: '12fp', weight: FontWeight.Regular }
+            })
+            .onChange((value: string | string[], index: number | number[]) => {
+              let idx: number = index as number;
+              this.selectedEndWeek = idx + 1;
+              if (this.selectedEndWeek < this.selectedStartWeek) {
+                this.selectedEndWeek = this.selectedStartWeek;
+              }
+            })
+        }
+        .layoutWeight(1)
+        .padding({ left: 8 })
       }
+      .width('100%')
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-    .alignItems(HorizontalAlign.Start)
   }
 
-  @Builder
-  EndWeekSelector() {
-    Column() {
-      Text('结束周次')
-        .fontSize(14)
-        .fontColor('#333333')
-        .margin({ bottom: 8 })
-
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(Array.from({ length: this.viewModel.currentTotalWeeks }, (_v: Object, k: number) => k + 1), (week: number) => {
-          Column() {
-            Text('第' + week + '周')
-              .fontSize(12)
-              .fontColor(week === this.selectedEndWeek ? Color.White : '#333333')
-          }
-          .height(32)
-          .padding({ left: 8, right: 8 })
-          .borderRadius(16)
-          .backgroundColor(week === this.selectedEndWeek ? '#5B9BD5' : '#F0F0F0')
-          .justifyContent(FlexAlign.Center)
-          .margin(3)
-          .onClick(() => {
-            this.selectedEndWeek = week;
-            if (this.selectedEndWeek < this.selectedStartWeek) {
-              this.selectedEndWeek = this.selectedStartWeek;
-            }
-          })
-        }, (week: number) => 'endweek_' + week.toString())
-      }
+  private getWeekRange(): string[] {
+    let range: string[] = [];
+    for (let i = 1; i <= this.viewModel.currentTotalWeeks; i++) {
+      range.push('第' + i + '周');
     }
-    .width('100%')
-    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-    .alignItems(HorizontalAlign.Start)
+    return range;
   }
 
   private saveCourse(): void {
