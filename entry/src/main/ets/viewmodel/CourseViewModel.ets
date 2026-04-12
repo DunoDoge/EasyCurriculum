@@ -29,6 +29,20 @@ export class CourseViewModel {
     return [];
   }
 
+  get currentTotalSlots(): number {
+    if (this.currentTimetable !== null) {
+      return this.currentTimetable.totalSlots;
+    }
+    return 13;
+  }
+
+  get currentTotalWeeks(): number {
+    if (this.currentTimetable !== null) {
+      return this.currentTimetable.totalWeeks;
+    }
+    return 20;
+  }
+
   async init(context: Context): Promise<void> {
     try {
       this.prefs = await preferences.getPreferences(context, Constants.PREFERENCES_NAME);
@@ -220,13 +234,19 @@ export class CourseViewModel {
     Logger.info('Deleted timetable, remaining count: ' + this.timetables.length);
   }
 
-  async updateTimetable(timetableId: string, name: string, semesterStartDate: string, showWeekend?: boolean): Promise<void> {
+  async updateTimetable(timetableId: string, name: string, semesterStartDate: string, showWeekend?: boolean, totalSlots?: number, totalWeeks?: number): Promise<void> {
     for (let i = 0; i < this.timetables.length; i++) {
       if (this.timetables[i].id === timetableId) {
         this.timetables[i].name = name;
         this.timetables[i].semesterStartDate = semesterStartDate;
         if (showWeekend !== undefined) {
           this.timetables[i].showWeekend = showWeekend;
+        }
+        if (totalSlots !== undefined) {
+          this.timetables[i].totalSlots = totalSlots;
+        }
+        if (totalWeeks !== undefined) {
+          this.timetables[i].totalWeeks = totalWeeks;
         }
 
         if (this.currentTimetableId === timetableId) {
@@ -259,8 +279,9 @@ export class CourseViewModel {
     if (week < 1) {
       week = 1;
     }
-    if (week > Constants.TOTAL_WEEKS) {
-      week = Constants.TOTAL_WEEKS;
+    let maxWeeks = this.currentTotalWeeks;
+    if (week > maxWeeks) {
+      week = maxWeeks;
     }
     this.currentWeek = week;
   }
@@ -499,7 +520,7 @@ export class CourseViewModel {
   }
 
   nextWeek(): void {
-    if (this.currentWeek < Constants.TOTAL_WEEKS) {
+    if (this.currentWeek < this.currentTotalWeeks) {
       this.currentWeek = this.currentWeek + 1;
     }
   }

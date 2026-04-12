@@ -12,16 +12,22 @@ export struct SemesterSettingPage {
   @State selectedDay: number = 1;
   @State showDeleteConfirm: boolean = false;
   @State showWeekend: boolean = true;
+  @State totalSlots: number = 13;
+  @State totalWeeks: number = 20;
 
   aboutToAppear(): void {
     if (this.viewModel.currentTimetable !== null) {
       this.timetableName = this.viewModel.currentTimetable.name;
       this.selectedDate = this.viewModel.currentTimetable.semesterStartDate;
       this.showWeekend = this.viewModel.currentTimetable.showWeekend;
+      this.totalSlots = this.viewModel.currentTimetable.totalSlots;
+      this.totalWeeks = this.viewModel.currentTimetable.totalWeeks;
     } else {
       this.timetableName = '我的课表';
       this.selectedDate = '';
       this.showWeekend = true;
+      this.totalSlots = 13;
+      this.totalWeeks = 20;
     }
 
     if (this.selectedDate !== '') {
@@ -133,6 +139,88 @@ export struct SemesterSettingPage {
           .borderRadius(12)
           .margin({ bottom: 16 })
 
+          Column() {
+            Text('一天课程节数')
+              .fontSize(14)
+              .fontColor('#666666')
+              .margin({ bottom: 8 })
+              .alignSelf(ItemAlign.Start)
+
+            Row() {
+              Text(this.totalSlots.toString() + '节')
+                .fontSize(16)
+                .fontColor('#333333')
+                .width(50)
+
+              Slider({
+                value: this.totalSlots,
+                min: 8,
+                max: 16,
+                step: 1,
+                style: SliderStyle.OutSet
+              })
+                .width('100%')
+                .layoutWeight(1)
+                .onChange((value: number, mode: SliderChangeMode) => {
+                  this.totalSlots = Math.round(value);
+                })
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+
+            Text('设置一天中显示的课程节数（8-16节）')
+              .fontSize(12)
+              .fontColor('#999999')
+              .margin({ top: 4 })
+              .alignSelf(ItemAlign.Start)
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+          .backgroundColor(Color.White)
+          .borderRadius(12)
+          .margin({ bottom: 16 })
+
+          Column() {
+            Text('学期周数')
+              .fontSize(14)
+              .fontColor('#666666')
+              .margin({ bottom: 8 })
+              .alignSelf(ItemAlign.Start)
+
+            Row() {
+              Text(this.totalWeeks.toString() + '周')
+                .fontSize(16)
+                .fontColor('#333333')
+                .width(50)
+
+              Slider({
+                value: this.totalWeeks,
+                min: 10,
+                max: 30,
+                step: 1,
+                style: SliderStyle.OutSet
+              })
+                .width('100%')
+                .layoutWeight(1)
+                .onChange((value: number, mode: SliderChangeMode) => {
+                  this.totalWeeks = Math.round(value);
+                })
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+
+            Text('设置学期的总周数（10-30周）')
+              .fontSize(12)
+              .fontColor('#999999')
+              .margin({ top: 4 })
+              .alignSelf(ItemAlign.Start)
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+          .backgroundColor(Color.White)
+          .borderRadius(12)
+          .margin({ bottom: 16 })
+
           if (this.viewModel.timetables.length > 1) {
             Button('删除课表')
               .fontSize(16)
@@ -177,7 +265,9 @@ export struct SemesterSettingPage {
                     this.viewModel.currentTimetable.id,
                     this.timetableName.trim(),
                     this.selectedDate,
-                    this.showWeekend
+                    this.showWeekend,
+                    this.totalSlots,
+                    this.totalWeeks
                   );
                 }
                 this.navPathStack.pop();

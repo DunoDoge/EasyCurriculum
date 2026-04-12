@@ -1,5 +1,5 @@
 export class Constants {
-  static readonly TOTAL_SLOTS: number = 12;
+  static readonly TOTAL_SLOTS: number = 13;
   static readonly TOTAL_DAYS: number = 7;
   static readonly SLOT_HEIGHT: number = 60;
   static readonly TIME_HEADER_WIDTH: number = 50;
@@ -20,13 +20,14 @@ export class Constants {
     3: '09:50',
     4: '10:40',
     5: '11:30',
-    6: '14:00',
-    7: '14:50',
-    8: '15:50',
+    6: '14:05',
+    7: '14:55',
+    8: '15:45',
     9: '16:40',
     10: '17:30',
-    11: '19:00',
-    12: '19:50'
+    11: '18:30',
+    12: '19:20',
+    13: '20:10'
   } as Record<number, string>;
 
   static readonly COURSE_COLORS: string[] = [

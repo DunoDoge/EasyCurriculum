@@ -35,7 +35,7 @@ struct Index {
               .fontWeight(FontWeight.Medium)
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
-              .constraintSize({ maxWidth: 120 })
+              .constraintSize({ maxWidth: '35%' })
 
             Text('▼')
               .fontSize(10)
@@ -49,15 +49,6 @@ struct Index {
 
           Blank()
 
-          // Text('<')
-          //   .fontSize(20)
-          //   .fontColor('#333333')
-          //   .fontWeight(FontWeight.Bold)
-          //   .padding({ left: 8, right: 8 })
-          //   .onClick(() => {
-          //     this.viewModel.prevWeek();
-          //   })
-
           Text('第' + this.viewModel.currentWeek + '周')
             .fontSize(20)
             .fontColor('#333333')
@@ -65,15 +56,6 @@ struct Index {
             .onClick(() => {
               this.showWeekPicker = true;
             })
-
-          // Text('>')
-          //   .fontSize(20)
-          //   .fontColor('#333333')
-          //   .fontWeight(FontWeight.Bold)
-          //   .padding({ left: 8, right: 8 })
-          //   .onClick(() => {
-          //     this.viewModel.nextWeek();
-          //   })
 
           Blank()
 
@@ -121,7 +103,7 @@ struct Index {
 
           Scroll() {
             Row() {
-              TimeSlotHeader()
+              TimeSlotHeader({ totalSlots: this.viewModel.currentTotalSlots })
 
               Row() {
                 ForEach(getWeekDayList(this.viewModel.currentTimetable?.showWeekend ?? true), (day: WeekDay) => {
@@ -185,7 +167,7 @@ struct Index {
 
             Scroll() {
               Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start }) {
-                ForEach(Array.from({ length: Constants.TOTAL_WEEKS }, (_v: Object, k: number) => k + 1), (week: number) => {
+                ForEach(Array.from({ length: this.viewModel.currentTotalWeeks }, (_v: Object, k: number) => k + 1), (week: number) => {
                   Column() {
                     Text('第' + week + '周')
                       .fontSize(14)
@@ -411,7 +393,7 @@ struct Index {
   DayColumn(day: WeekDay) {
     Stack() {
       Column() {
-        ForEach(Array.from({ length: Constants.TOTAL_SLOTS }, (_v: Object, k: number) => k + 1), (slot: number) => {
+        ForEach(Array.from({ length: this.viewModel.currentTotalSlots }, (_v: Object, k: number) => k + 1), (slot: number) => {
           Column() {}
             .width('100%')
             .height(Constants.SLOT_HEIGHT)
@@ -448,7 +430,7 @@ struct Index {
       }, (course: CourseInfo) => course.id)
     }
     .layoutWeight(1)
-    .height(Constants.TOTAL_SLOTS * Constants.SLOT_HEIGHT)
+    .height(this.viewModel.currentTotalSlots * Constants.SLOT_HEIGHT)
     .clip(false)
   }
 }
@@ -644,7 +626,7 @@ struct CourseEditPage {
         .margin({ bottom: 8 })
 
       Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(Array.from({ length: Constants.TOTAL_SLOTS }, (_v: Object, k: number) => k + 1), (slot: number) => {
+        ForEach(Array.from({ length: this.viewModel.currentTotalSlots }, (_v: Object, k: number) => k + 1), (slot: number) => {
           Column() {
             Text('第' + slot + '节')
               .fontSize(13)
@@ -679,7 +661,7 @@ struct CourseEditPage {
         .margin({ bottom: 8 })
 
       Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(Array.from({ length: Constants.TOTAL_SLOTS }, (_v: Object, k: number) => k + 1), (slot: number) => {
+        ForEach(Array.from({ length: this.viewModel.currentTotalSlots }, (_v: Object, k: number) => k + 1), (slot: number) => {
           Column() {
             Text('第' + slot + '节')
               .fontSize(13)
@@ -746,7 +728,7 @@ struct CourseEditPage {
         .margin({ bottom: 8 })
 
       Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(Array.from({ length: Constants.TOTAL_WEEKS }, (_v: Object, k: number) => k + 1), (week: number) => {
+        ForEach(Array.from({ length: this.viewModel.currentTotalWeeks }, (_v: Object, k: number) => k + 1), (week: number) => {
           Column() {
             Text('第' + week + '周')
               .fontSize(12)
@@ -781,7 +763,7 @@ struct CourseEditPage {
         .margin({ bottom: 8 })
 
       Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(Array.from({ length: Constants.TOTAL_WEEKS }, (_v: Object, k: number) => k + 1), (week: number) => {
+        ForEach(Array.from({ length: this.viewModel.currentTotalWeeks }, (_v: Object, k: number) => k + 1), (week: number) => {
           Column() {
             Text('第' + week + '周')
               .fontSize(12)

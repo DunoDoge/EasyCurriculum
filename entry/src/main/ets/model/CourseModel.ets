@@ -134,13 +134,17 @@ export class Timetable {
   courses: CourseInfo[] = [];
   isDefault: boolean = false;
   showWeekend: boolean = true;
+  totalSlots: number = 13;
+  totalWeeks: number = 20;
 
-  constructor(id: string, name: string, semesterStartDate: string, isDefault: boolean, showWeekend: boolean = true) {
+  constructor(id: string, name: string, semesterStartDate: string, isDefault: boolean, showWeekend: boolean = true, totalSlots: number = 13, totalWeeks: number = 20) {
     this.id = id;
     this.name = name;
     this.semesterStartDate = semesterStartDate;
     this.isDefault = isDefault;
     this.showWeekend = showWeekend;
+    this.totalSlots = totalSlots;
+    this.totalWeeks = totalWeeks;
   }
 
   toJson(): Record<string, Object> {
@@ -154,7 +158,9 @@ export class Timetable {
       'semesterStartDate': this.semesterStartDate,
       'courses': courseJsonArray,
       'isDefault': this.isDefault,
-      'showWeekend': this.showWeekend
+      'showWeekend': this.showWeekend,
+      'totalSlots': this.totalSlots,
+      'totalWeeks': this.totalWeeks
     } as Record<string, Object>;
   }
 
@@ -164,10 +170,18 @@ export class Timetable {
     let semesterStartDate = json['semesterStartDate'] as string;
     let isDefault = json['isDefault'] as boolean;
     let showWeekend = json['showWeekend'] as boolean;
+    let totalSlots = json['totalSlots'] as number;
+    let totalWeeks = json['totalWeeks'] as number;
     if (showWeekend === undefined) {
       showWeekend = true;
     }
-    let timetable = new Timetable(id, name, semesterStartDate, isDefault, showWeekend);
+    if (totalSlots === undefined) {
+      totalSlots = 13;
+    }
+    if (totalWeeks === undefined) {
+      totalWeeks = 20;
+    }
+    let timetable = new Timetable(id, name, semesterStartDate, isDefault, showWeekend, totalSlots, totalWeeks);
 
     let coursesArray = json['courses'];
     if (coursesArray !== undefined && coursesArray !== null) {
@@ -181,7 +195,7 @@ export class Timetable {
   }
 
   static createDefault(): Timetable {
-    let timetable = new Timetable('', '我的课表', '', true, true);
+    let timetable = new Timetable('', '我的课表', '', true, true, 13, 20);
     return timetable;
   }
 
