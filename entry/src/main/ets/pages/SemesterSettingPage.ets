@@ -161,7 +161,7 @@ export struct SemesterSettingPage {
               })
                 .width('100%')
                 .layoutWeight(1)
-                .onChange((value: number, mode: SliderChangeMode) => {
+                .onChange((value: number, _mode: SliderChangeMode) => {
                   this.totalSlots = Math.round(value);
                 })
             }
@@ -202,7 +202,7 @@ export struct SemesterSettingPage {
               })
                 .width('100%')
                 .layoutWeight(1)
-                .onChange((value: number, mode: SliderChangeMode) => {
+                .onChange((value: number, _mode: SliderChangeMode) => {
                   this.totalWeeks = Math.round(value);
                 })
             }

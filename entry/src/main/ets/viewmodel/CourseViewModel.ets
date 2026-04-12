@@ -270,6 +270,17 @@ export class CourseViewModel {
     }
   }
 
+  private getSemesterStartDate(): Date | null {
+    if (this.semesterStartDate === '') {
+      return null;
+    }
+    let parts: string[] = this.semesterStartDate.split('-');
+    let startYear = Number(parts[0]);
+    let startMonth = Number(parts[1]) - 1;
+    let startDay = Number(parts[2]);
+    return new Date(startYear, startMonth, startDay);
+  }
+
   calculateCurrentWeekFromToday(): void {
     if (this.semesterStartDate === '') {
       this.currentWeek = 1;
@@ -287,28 +298,20 @@ export class CourseViewModel {
   }
 
   calculateWeekFromDate(date: Date): number {
-    if (this.semesterStartDate === '') {
+    let startDate = this.getSemesterStartDate();
+    if (startDate === null) {
       return 1;
     }
-    let parts: string[] = this.semesterStartDate.split('-');
-    let startYear = Number(parts[0]);
-    let startMonth = Number(parts[1]) - 1;
-    let startDay = Number(parts[2]);
-    let startDate = new Date(startYear, startMonth, startDay);
     let diffMs = date.getTime() - startDate.getTime();
     let diffDays = diffMs / (1000 * 60 * 60 * 24);
     return Math.floor(diffDays / 7) + 1;
   }
 
   getDayDate(weekDay: number): string {
-    if (this.semesterStartDate === '') {
+    let startDate = this.getSemesterStartDate();
+    if (startDate === null) {
       return '';
     }
-    let parts: string[] = this.semesterStartDate.split('-');
-    let startYear = Number(parts[0]);
-    let startMonth = Number(parts[1]) - 1;
-    let startDay = Number(parts[2]);
-    let startDate = new Date(startYear, startMonth, startDay);
     let offsetDays = (this.currentWeek - 1) * 7 + (weekDay - 1);
     let targetDate = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
     let month = targetDate.getMonth() + 1;
@@ -317,15 +320,11 @@ export class CourseViewModel {
   }
 
   isToday(weekDay: number): boolean {
-    if (this.semesterStartDate === '') {
+    let startDate = this.getSemesterStartDate();
+    if (startDate === null) {
       return false;
     }
     let today = new Date();
-    let parts: string[] = this.semesterStartDate.split('-');
-    let startYear = Number(parts[0]);
-    let startMonth = Number(parts[1]) - 1;
-    let startDay = Number(parts[2]);
-    let startDate = new Date(startYear, startMonth, startDay);
     let offsetDays = (this.currentWeek - 1) * 7 + (weekDay - 1);
     let targetDate = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
     return today.getFullYear() === targetDate.getFullYear() &&
@@ -334,14 +333,10 @@ export class CourseViewModel {
   }
 
   getWeekDateRange(): string {
-    if (this.semesterStartDate === '') {
+    let startDate = this.getSemesterStartDate();
+    if (startDate === null) {
       return '';
     }
-    let parts: string[] = this.semesterStartDate.split('-');
-    let startYear = Number(parts[0]);
-    let startMonth = Number(parts[1]) - 1;
-    let startDay = Number(parts[2]);
-    let startDate = new Date(startYear, startMonth, startDay);
     let weekStartOffset = (this.currentWeek - 1) * 7;
     let weekStartDate = new Date(startDate.getTime() + weekStartOffset * 24 * 60 * 60 * 1000);
     let weekEndDate = new Date(startDate.getTime() + (weekStartOffset + 6) * 24 * 60 * 60 * 1000);
@@ -367,42 +362,30 @@ export class CourseViewModel {
   }
 
   getMonthOfWeek(): number {
-    if (this.semesterStartDate === '') {
+    let startDate = this.getSemesterStartDate();
+    if (startDate === null) {
       return 0;
     }
-    let parts: string[] = this.semesterStartDate.split('-');
-    let startYear = Number(parts[0]);
-    let startMonth = Number(parts[1]) - 1;
-    let startDay = Number(parts[2]);
-    let startDate = new Date(startYear, startMonth, startDay);
     let weekStartOffset = (this.currentWeek - 1) * 7;
     let mondayDate = new Date(startDate.getTime() + weekStartOffset * 24 * 60 * 60 * 1000);
     return mondayDate.getMonth() + 1;
   }
 
   getDayDateOfMonth(weekDay: number): number {
-    if (this.semesterStartDate === '') {
+    let startDate = this.getSemesterStartDate();
+    if (startDate === null) {
       return 0;
     }
-    let parts: string[] = this.semesterStartDate.split('-');
-    let startYear = Number(parts[0]);
-    let startMonth = Number(parts[1]) - 1;
-    let startDay = Number(parts[2]);
-    let startDate = new Date(startYear, startMonth, startDay);
     let offsetDays = (this.currentWeek - 1) * 7 + (weekDay - 1);
     let targetDate = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
     return targetDate.getDate();
   }
 
   getDayFullDate(): string {
-    if (this.semesterStartDate === '') {
+    let startDate = this.getSemesterStartDate();
+    if (startDate === null) {
       return '';
     }
-    let parts: string[] = this.semesterStartDate.split('-');
-    let startYear = Number(parts[0]);
-    let startMonth = Number(parts[1]) - 1;
-    let startDay = Number(parts[2]);
-    let startDate = new Date(startYear, startMonth, startDay);
     let offsetDays = (this.currentWeek - 1) * 7 + (this.selectedWeekDay - 1);
     let targetDate = new Date(startDate.getTime() + offsetDays * 24 * 60 * 60 * 1000);
     let month = targetDate.getMonth() + 1;
