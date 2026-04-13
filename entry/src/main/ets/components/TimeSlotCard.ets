@@ -9,13 +9,36 @@ export struct TimeSlotCard {
   @Param totalSlotCount: number = 1;
   @Param maxSlotNumber: number = 13;
   @Param maxWeekNumber: number = 20;
-  @Local showWeekPicker: boolean = false;
-  @Local showSlotPicker: boolean = false;
+  @Local sheetOpen: boolean = false;
+  @Local pickerMode: string = 'week';
   @Local editingTeacher: boolean = false;
   @Local editingLocation: boolean = false;
   @Local tempTeacher: string = '';
   @Local tempLocation: string = '';
   @Param onDelete: () => void = () => {};
+
+  @Builder
+  PickerSheetBuilder() {
+    WeekSlotPickerDialog({
+      mode: this.pickerMode,
+      maxValue: this.pickerMode === 'week' ? this.maxWeekNumber : this.maxSlotNumber,
+      initStartValue: this.pickerMode === 'week' ? this.timeSlot.startWeek : this.timeSlot.startSlot,
+      initEndValue: this.pickerMode === 'week' ? this.timeSlot.endWeek : this.timeSlot.endSlot,
+      onConfirm: (startValue: number, endValue: number) => {
+        if (this.pickerMode === 'week') {
+          this.timeSlot.startWeek = startValue;
+          this.timeSlot.endWeek = endValue;
+        } else {
+          this.timeSlot.startSlot = startValue;
+          this.timeSlot.endSlot = endValue;
+        }
+        this.sheetOpen = false;
+      },
+      onCancel: () => {
+        this.sheetOpen = false;
+      }
+    })
+  }
 
   build() {
     Column() {
@@ -53,7 +76,8 @@ export struct TimeSlotCard {
         .borderRadius(8)
         .backgroundColor('#F0F0F0')
         .onClick(() => {
-          this.showWeekPicker = true;
+          this.pickerMode = 'week';
+          this.sheetOpen = true;
         })
 
         Blank()
@@ -71,7 +95,8 @@ export struct TimeSlotCard {
         .borderRadius(8)
         .backgroundColor('#F0F0F0')
         .onClick(() => {
-          this.showSlotPicker = true;
+          this.pickerMode = 'slot';
+          this.sheetOpen = true;
         })
       }
       .width('100%')
@@ -213,42 +238,6 @@ export struct TimeSlotCard {
       .width('100%')
       .height(40)
       .alignItems(VerticalAlign.Center)
-
-      // 周次弹窗
-      if (this.showWeekPicker) {
-        WeekSlotPickerDialog({
-          mode: 'week',
-          maxValue: this.maxWeekNumber,
-          initStartValue: this.timeSlot.startWeek,
-          initEndValue: this.timeSlot.endWeek,
-          onConfirm: (startValue: number, endValue: number) => {
-            this.timeSlot.startWeek = startValue;
-            this.timeSlot.endWeek = endValue;
-            this.showWeekPicker = false;
-          },
-          onCancel: () => {
-            this.showWeekPicker = false;
-          }
-        })
-      }
-
-      // 节次弹窗
-      if (this.showSlotPicker) {
-        WeekSlotPickerDialog({
-          mode: 'slot',
-          maxValue: this.maxSlotNumber,
-          initStartValue: this.timeSlot.startSlot,
-          initEndValue: this.timeSlot.endSlot,
-          onConfirm: (startValue: number, endValue: number) => {
-            this.timeSlot.startSlot = startValue;
-            this.timeSlot.endSlot = endValue;
-            this.showSlotPicker = false;
-          },
-          onCancel: () => {
-            this.showSlotPicker = false;
-          }
-        })
-      }
     }
     .width('100%')
     .padding(16)
@@ -256,5 +245,14 @@ export struct TimeSlotCard {
     .borderRadius(12)
     .borderWidth(1)
     .borderColor('#E0E0E0')
+    .bindSheet(!!this.sheetOpen, this.PickerSheetBuilder(), {
+      height: SheetSize.FIT_CONTENT,
+      dragBar: false,
+      showClose: true,
+      backgroundColor: Color.Transparent,
+      onDisappear: () => {
+        this.sheetOpen = false;
+      }
+    })
   }
 }
