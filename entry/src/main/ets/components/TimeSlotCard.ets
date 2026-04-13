@@ -170,6 +170,7 @@ export struct TimeSlotCard {
 
         if (this.editingTeacher) {
           TextInput({ text: this.tempTeacher })
+            .id('teacherInput_' + this.slotIndex)
             .fontSize(15)
             .fontColor('#333333')
             .layoutWeight(1)
@@ -193,6 +194,9 @@ export struct TimeSlotCard {
             .onClick(() => {
               this.tempTeacher = this.timeSlot.teacher;
               this.editingTeacher = true;
+              setTimeout(() => {
+                this.getUIContext()?.getFocusController()?.requestFocus('teacherInput_' + this.slotIndex);
+              }, 50);
             })
         }
       }
@@ -209,6 +213,7 @@ export struct TimeSlotCard {
 
         if (this.editingLocation) {
           TextInput({ text: this.tempLocation })
+            .id('locationInput_' + this.slotIndex)
             .fontSize(15)
             .fontColor('#333333')
             .layoutWeight(1)
@@ -232,6 +237,9 @@ export struct TimeSlotCard {
             .onClick(() => {
               this.tempLocation = this.timeSlot.location;
               this.editingLocation = true;
+              setTimeout(() => {
+                this.getUIContext()?.getFocusController()?.requestFocus('locationInput_' + this.slotIndex);
+              }, 50);
             })
         }
       }
