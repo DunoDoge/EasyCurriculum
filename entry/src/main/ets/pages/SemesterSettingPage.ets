@@ -1,19 +1,19 @@
 import { CourseViewModel } from '../viewmodel/CourseViewModel';
 import { promptAction } from '@kit.ArkUI';
 
-@Component
+@ComponentV2
 export struct SemesterSettingPage {
-  @ObjectLink viewModel: CourseViewModel;
-  navPathStack: NavPathStack = new NavPathStack();
-  @State timetableName: string = '';
-  @State selectedDate: string = '';
-  @State selectedYear: number = 2026;
-  @State selectedMonth: number = 1;
-  @State selectedDay: number = 1;
-  @State showDeleteConfirm: boolean = false;
-  @State showWeekend: boolean = true;
-  @State totalSlots: number = 13;
-  @State totalWeeks: number = 20;
+  @Require @Param viewModel: CourseViewModel;
+  @Require @Param navPathStack: NavPathStack;
+  @Local timetableName: string = '';
+  @Local selectedDate: string = '';
+  @Local selectedYear: number = 2026;
+  @Local selectedMonth: number = 1;
+  @Local selectedDay: number = 1;
+  @Local showDeleteConfirm: boolean = false;
+  @Local showWeekend: boolean = true;
+  @Local totalSlots: number = 13;
+  @Local totalWeeks: number = 20;
 
   aboutToAppear(): void {
     if (this.viewModel.currentTimetable !== null) {

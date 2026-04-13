@@ -1,13 +1,13 @@
 import { getWeekDayList, getWeekDayName, WeekDay } from '../model/WeekDay';
 import { Constants } from '../common/constants/Constants';
 
-@Component
+@ComponentV2
 export struct WeekHeader {
-  @Prop currentWeek: number = 1;
-  @Prop semesterStartDate: string = '';
-  @Prop monthOfWeek: number = 0;
-  @Prop showWeekend: boolean = true;
-  onDateClick: (weekDay: number) => void = (_weekDay: number) => {};
+  @Param currentWeek: number = 1;
+  @Param semesterStartDate: string = '';
+  @Param monthOfWeek: number = 0;
+  @Param showWeekend: boolean = true;
+  @Param onDateClick: (weekDay: number) => void = (_weekDay: number) => {};
 
   private getDayDate(weekDay: number): string {
     if (this.semesterStartDate === '') {

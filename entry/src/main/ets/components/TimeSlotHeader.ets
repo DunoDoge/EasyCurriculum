@@ -1,8 +1,8 @@
 import { Constants } from '../common/constants/Constants';
 
-@Component
+@ComponentV2
 export struct TimeSlotHeader {
-   @Prop totalSlots: number = 13;
+   @Param totalSlots: number = 13;
 
   build() {
     Column() {

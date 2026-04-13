@@ -1,17 +1,17 @@
 import { CourseInfo } from '../model/CourseModel';
 import { WeekDay, getWeekDayName } from '../model/WeekDay';
 import { Constants } from '../common/constants/Constants';
-import { CourseViewModel } from '../viewmodel/CourseViewModel';
+import { CourseViewModel, CourseSlotDisplay } from '../viewmodel/CourseViewModel';
 import { DayCourseCard } from './DayCourseCard';
 
-@Component
+@ComponentV2
 export struct DayView {
-  @Prop selectedWeekDay: number = 1;
-  @Prop currentWeek: number = 1;
-  @ObjectLink viewModel: CourseViewModel;
-  onBack: () => void = () => {};
-  onCourseClick: (course: CourseInfo) => void = () => {};
-  onSlotClick: (slot: number) => void = () => {};
+  @Param selectedWeekDay: number = 1;
+  @Param currentWeek: number = 1;
+  @Require @Param viewModel: CourseViewModel;
+  @Param onBack: () => void = () => {};
+  @Param onCourseClick: (course: CourseInfo) => void = () => {};
+  @Param onSlotClick: (slot: number) => void = () => {};
 
   build() {
     Column() {
@@ -44,14 +44,18 @@ export struct DayView {
       // 课程列表区域
       Scroll() {
         Column() {
-          ForEach(this.viewModel.getCoursesByDay(this.selectedWeekDay), (course: CourseInfo) => {
+          ForEach(this.viewModel.getCourseSlotsByDay(this.selectedWeekDay), (csd: CourseSlotDisplay) => {
             DayCourseCard({
-              course: course,
+              course: csd.course,
+              displayStartSlot: csd.timeSlot.startSlot,
+              displayEndSlot: csd.timeSlot.endSlot,
+              displayTeacher: csd.timeSlot.teacher,
+              displayLocation: csd.timeSlot.location,
               onCardClick: (clickedCourse: CourseInfo) => {
                 this.onCourseClick(clickedCourse);
               }
             })
-          }, (course: CourseInfo) => course.id)
+          }, (csd: CourseSlotDisplay, index: number) => csd.course.id + '_' + index.toString() + '_v' + this.viewModel.dataVersion.toString())
         }
         .width('100%')
         .alignItems(HorizontalAlign.Start)
@@ -59,6 +63,7 @@ export struct DayView {
       .layoutWeight(1)
       .scrollBar(BarState.Auto)
       .align(Alignment.Top)
+      .id('dayScroll_' + this.viewModel.dataVersion)
     }
     .width('100%')
     .height('100%')

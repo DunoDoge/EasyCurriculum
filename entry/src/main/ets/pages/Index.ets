@@ -1,5 +1,5 @@
 import { CourseViewModel } from '../viewmodel/CourseViewModel';
-import { CourseInfo, WeekType, getWeekTypeName } from '../model/CourseModel';
+import { CourseInfo, WeekType, getWeekTypeName, TimeSlot } from '../model/CourseModel';
 import { WeekDay, getWeekDayList, getWeekDayName } from '../model/WeekDay';
 import { Constants } from '../common/constants/Constants';
 import { CourseCard } from '../components/CourseCard';
@@ -9,16 +9,18 @@ import { DayView } from '../components/DayView';
 import { SemesterSettingPage } from './SemesterSettingPage';
 import { Timetable } from '../model/CourseModel';
 import { promptAction } from '@kit.ArkUI';
+import { TimeSlotCard } from '../components/TimeSlotCard';
+import { CourseSlotDisplay } from '../viewmodel/CourseViewModel';
 
 @Entry
-@Component
+@ComponentV2
 struct Index {
-  @State viewModel: CourseViewModel = new CourseViewModel();
+  @Local viewModel: CourseViewModel = new CourseViewModel();
   navPathStack: NavPathStack = new NavPathStack();
-  @State showWeekPicker: boolean = false;
-  @State showTimetablePicker: boolean = false;
-  @State showNewTimetableDialog: boolean = false;
-  @State newTimetableName: string = '';
+  @Local showWeekPicker: boolean = false;
+  @Local showTimetablePicker: boolean = false;
+  @Local showNewTimetableDialog: boolean = false;
+  @Local newTimetableName: string = '';
 
   aboutToAppear(): void {
     this.viewModel.init(this.getUIContext().getHostContext() as Context);
@@ -116,6 +118,7 @@ struct Index {
           .scrollable(ScrollDirection.Vertical)
           .scrollBar(BarState.Auto)
           .layoutWeight(1)
+          .id('weekScroll_' + this.viewModel.dataVersion)
         } else {
           DayView({
             selectedWeekDay: this.viewModel.selectedWeekDay,
@@ -132,11 +135,12 @@ struct Index {
             },
             onSlotClick: (slot: number) => {
               let newCourse = CourseInfo.createDefault();
-              newCourse.weekDay = this.viewModel.selectedWeekDay;
-              newCourse.startSlot = slot;
-              newCourse.endSlot = slot;
-              newCourse.startWeek = this.viewModel.currentWeek;
-              newCourse.endWeek = this.viewModel.currentWeek;
+              let newTs = newCourse.timeSlots[0];
+              newTs.weekDay = this.viewModel.selectedWeekDay;
+              newTs.startSlot = slot;
+              newTs.endSlot = slot;
+              newTs.startWeek = this.viewModel.currentWeek;
+              newTs.endWeek = this.viewModel.currentWeek;
               this.navPathStack.pushPath({
                 name: 'CourseEditPage',
                 param: newCourse
@@ -403,11 +407,12 @@ struct Index {
             .onClick(() => {
               if (this.viewModel.getCourseAtSlot(day, slot) === undefined) {
                 let newCourse = CourseInfo.createDefault();
-                newCourse.weekDay = day;
-                newCourse.startSlot = slot;
-                newCourse.endSlot = slot;
-                newCourse.startWeek = this.viewModel.currentWeek;
-                newCourse.endWeek = this.viewModel.currentWeek;
+                let newTs = newCourse.timeSlots[0];
+                newTs.weekDay = day;
+                newTs.startSlot = slot;
+                newTs.endSlot = slot;
+                newTs.startWeek = this.viewModel.currentWeek;
+                newTs.endWeek = this.viewModel.currentWeek;
                 this.navPathStack.pushPath({
                   name: 'CourseEditPage',
                   param: newCourse
@@ -417,9 +422,13 @@ struct Index {
         }, (slot: number) => slot.toString())
       }
 
-      ForEach(this.viewModel.getCoursesByDay(day), (course: CourseInfo) => {
+      ForEach(this.viewModel.getCourseSlotsByDay(day), (csd: CourseSlotDisplay) => {
         CourseCard({
-          course: course,
+          course: csd.course,
+          displayStartSlot: csd.timeSlot.startSlot,
+          displayEndSlot: csd.timeSlot.endSlot,
+          displayTeacher: csd.timeSlot.teacher,
+          displayLocation: csd.timeSlot.location,
           onCardClick: (clickedCourse: CourseInfo) => {
             this.navPathStack.pushPath({
               name: 'CourseDetailPage',
@@ -427,7 +436,7 @@ struct Index {
             });
           }
         })
-      }, (course: CourseInfo) => course.id)
+      }, (csd: CourseSlotDisplay, index: number) => csd.course.id + '_' + index.toString() + '_v' + this.viewModel.dataVersion.toString())
     }
     .layoutWeight(1)
     .height(this.viewModel.currentTotalSlots * Constants.SLOT_HEIGHT)
@@ -435,32 +444,24 @@ struct Index {
   }
 }
 
-@Component
+@ComponentV2
 struct CourseEditPage {
-  @State course: CourseInfo = CourseInfo.createDefault();
-  @ObjectLink viewModel: CourseViewModel;
-  navPathStack: NavPathStack = new NavPathStack();
-  @State selectedWeekDay: number = 1;
-  @State selectedStartSlot: number = 1;
-  @State selectedEndSlot: number = 2;
-  @State selectedWeekType: number = 0;
-  @State selectedStartWeek: number = 1;
-  @State selectedEndWeek: number = 16;
-  @State selectedColorIndex: number = 0;
-  @State inputName: string = '';
-  @State inputTeacher: string = '';
-  @State inputLocation: string = '';
+  @Require @Param course: CourseInfo;
+  @Require @Param viewModel: CourseViewModel;
+  @Require @Param navPathStack: NavPathStack;
+  @Local selectedColorIndex: number = 0;
+  @Local inputName: string = '';
+  @Local timeSlots: TimeSlot[] = [];
 
   aboutToAppear(): void {
     this.inputName = this.course.name;
-    this.inputTeacher = this.course.teacher;
-    this.inputLocation = this.course.location;
-    this.selectedWeekDay = this.course.weekDay;
-    this.selectedStartSlot = this.course.startSlot;
-    this.selectedEndSlot = this.course.endSlot;
-    this.selectedWeekType = this.course.weekType;
-    this.selectedStartWeek = this.course.startWeek;
-    this.selectedEndWeek = this.course.endWeek;
+    // 深拷贝timeSlots以避免直接修改原数据
+    let copiedSlots: TimeSlot[] = [];
+    for (let i = 0; i < this.course.timeSlots.length; i++) {
+      let ts = this.course.timeSlots[i];
+      copiedSlots.push(new TimeSlot(ts.weekDay, ts.startSlot, ts.endSlot, ts.startWeek, ts.endWeek, ts.weekType, ts.teacher, ts.location));
+    }
+    this.timeSlots = copiedSlots;
     for (let i = 0; i < Constants.COURSE_COLORS.length; i++) {
       if (Constants.COURSE_COLORS[i] === this.course.color) {
         this.selectedColorIndex = i;
@@ -473,26 +474,30 @@ struct CourseEditPage {
     NavDestination() {
       Scroll() {
         Column() {
-          this.FormItem('课程名称', this.inputName, (value: string) => {
-            this.inputName = value;
-          });
+          // 课程名称
+          Column() {
+            Text('课程名称')
+              .fontSize(14)
+              .fontColor('#333333')
+              .margin({ bottom: 8 })
 
-          this.FormItem('教师', this.inputTeacher, (value: string) => {
-            this.inputTeacher = value;
-          });
+            TextInput({ text: this.inputName })
+              .fontSize(16)
+              .width('100%')
+              .height(44)
+              .borderRadius(8)
+              .backgroundColor(Color.White)
+              .borderWidth(1)
+              .borderColor('#E0E0E0')
+              .onChange((value: string) => {
+                this.inputName = value;
+              })
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+          .alignItems(HorizontalAlign.Start)
 
-          this.FormItem('教室', this.inputLocation, (value: string) => {
-            this.inputLocation = value;
-          });
-
-          this.WeekDaySelector();
-
-          this.SlotSelector();
-
-          this.WeekTypeSelector();
-
-          this.WeekSelector();
-
+          // 颜色选择器
           Column() {
             Text('颜色')
               .fontSize(14)
@@ -523,6 +528,54 @@ struct CourseEditPage {
           .width('100%')
           .padding({ left: 16, right: 16, top: 12, bottom: 12 })
 
+          // 时间段卡片列表
+          ForEach(this.timeSlots, (ts: TimeSlot, index: number) => {
+            Column() {
+              TimeSlotCard({
+                timeSlot: ts,
+                slotIndex: index + 1,
+                totalSlotCount: this.timeSlots.length,
+                maxSlotNumber: this.viewModel.currentTotalSlots,
+                maxWeekNumber: this.viewModel.currentTotalWeeks,
+                onDelete: () => {
+                  this.timeSlots.splice(index, 1);
+                  let newSlots: TimeSlot[] = [];
+                  for (let i = 0; i < this.timeSlots.length; i++) {
+                    newSlots.push(this.timeSlots[i]);
+                  }
+                  this.timeSlots = newSlots;
+                }
+              })
+            }
+            .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+          }, (ts: TimeSlot, index: number) => index.toString())
+
+          // 添加时间段按钮
+          Row() {
+            Text('+ 添加时间段')
+              .fontSize(15)
+              .fontColor('#5B9BD5')
+              .fontWeight(FontWeight.Medium)
+          }
+          .width('100%')
+          .height(48)
+          .justifyContent(FlexAlign.Center)
+          .alignItems(VerticalAlign.Center)
+          .backgroundColor(Color.White)
+          .borderRadius(12)
+          .borderWidth(1)
+          .borderColor('#E0E0E0')
+          .margin({ left: 16, right: 16, top: 8, bottom: 8 })
+          .onClick(() => {
+            let newSlots: TimeSlot[] = [];
+            for (let i = 0; i < this.timeSlots.length; i++) {
+              newSlots.push(this.timeSlots[i]);
+            }
+            newSlots.push(TimeSlot.createDefault());
+            this.timeSlots = newSlots;
+          })
+
+          // 保存/取消按钮
           Row() {
             Button('取消')
               .fontSize(16)
@@ -558,257 +611,6 @@ struct CourseEditPage {
     .hideBackButton(false)
   }
 
-  @Builder
-  FormItem(label: string, value: string, onChange: (value: string) => void) {
-    Column() {
-      Text(label)
-        .fontSize(14)
-        .fontColor('#333333')
-        .margin({ bottom: 8 })
-
-      TextInput({ text: value })
-        .fontSize(16)
-        .width('100%')
-        .height(44)
-        .borderRadius(8)
-        .backgroundColor(Color.White)
-        .borderWidth(1)
-        .borderColor('#E0E0E0')
-        .onChange(onChange)
-    }
-    .width('100%')
-    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-    .alignItems(HorizontalAlign.Start)
-  }
-
-  @Builder
-  WeekDaySelector() {
-    Column() {
-      Text('星期')
-        .fontSize(14)
-        .fontColor('#333333')
-        .margin({ bottom: 8 })
-
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(getWeekDayList(), (day: WeekDay) => {
-          Column() {
-            Text(getWeekDayName(day))
-              .fontSize(13)
-              .fontColor(day === this.selectedWeekDay ? Color.White : '#333333')
-          }
-          .height(36)
-          .padding({ left: 12, right: 12 })
-          .borderRadius(18)
-          .backgroundColor(day === this.selectedWeekDay ? '#5B9BD5' : '#F0F0F0')
-          .justifyContent(FlexAlign.Center)
-          .margin(4)
-          .onClick(() => {
-            this.selectedWeekDay = day;
-          })
-        }, (day: WeekDay) => 'weekday_' + day.toString())
-      }
-    }
-    .width('100%')
-    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-    .alignItems(HorizontalAlign.Start)
-  }
-
-  @Builder
-  SlotSelector() {
-    Column() {
-      Row() {
-        Column() {
-          Text('开始节次')
-            .fontSize(14)
-            .fontColor('#333333')
-            .margin({ bottom: 8 })
-
-          TextPicker({ range: this.getSlotRange(), selected: this.selectedStartSlot - 1 })
-            .height(150)
-            .canLoop(false)
-            .selectedTextStyle({
-              color: '#5B9BD5',
-              font: { size: '18fp', weight: FontWeight.Medium }
-            })
-            .textStyle({
-              color: '#666666',
-              font: { size: '14fp', weight: FontWeight.Regular }
-            })
-            .disappearTextStyle({
-              color: '#999999',
-              font: { size: '12fp', weight: FontWeight.Regular }
-            })
-            .onChange((value: string | string[], index: number | number[]) => {
-              let idx: number = index as number;
-              this.selectedStartSlot = idx + 1;
-              if (this.selectedEndSlot < this.selectedStartSlot) {
-                this.selectedEndSlot = this.selectedStartSlot;
-              }
-            })
-        }
-        .layoutWeight(1)
-        .padding({ right: 8 })
-
-        Column() {
-          Text('结束节次')
-            .fontSize(14)
-            .fontColor('#333333')
-            .margin({ bottom: 8 })
-
-          TextPicker({ range: this.getSlotRange(), selected: this.selectedEndSlot - 1 })
-            .height(150)
-            .canLoop(false)
-            .selectedTextStyle({
-              color: '#5B9BD5',
-              font: { size: '18fp', weight: FontWeight.Medium }
-            })
-            .textStyle({
-              color: '#666666',
-              font: { size: '14fp', weight: FontWeight.Regular }
-            })
-            .disappearTextStyle({
-              color: '#999999',
-              font: { size: '12fp', weight: FontWeight.Regular }
-            })
-            .onChange((value: string | string[], index: number | number[]) => {
-              let idx: number = index as number;
-              this.selectedEndSlot = idx + 1;
-              if (this.selectedEndSlot < this.selectedStartSlot) {
-                this.selectedEndSlot = this.selectedStartSlot;
-              }
-            })
-        }
-        .layoutWeight(1)
-        .padding({ left: 8 })
-      }
-      .width('100%')
-    }
-    .width('100%')
-    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-  }
-
-  private getSlotRange(): string[] {
-    let range: string[] = [];
-    for (let i = 1; i <= this.viewModel.currentTotalSlots; i++) {
-      range.push('第' + i + '节');
-    }
-    return range;
-  }
-
-  @Builder
-  WeekTypeSelector() {
-    Column() {
-      Text('周类型')
-        .fontSize(14)
-        .fontColor('#333333')
-        .margin({ bottom: 8 })
-
-      Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach([WeekType.EVERY_WEEK, WeekType.ODD_WEEK, WeekType.EVEN_WEEK], (type: number) => {
-          Column() {
-            Text(getWeekTypeName(type))
-              .fontSize(13)
-              .fontColor(type === this.selectedWeekType ? Color.White : '#333333')
-          }
-          .height(36)
-          .padding({ left: 12, right: 12 })
-          .borderRadius(18)
-          .backgroundColor(type === this.selectedWeekType ? '#5B9BD5' : '#F0F0F0')
-          .justifyContent(FlexAlign.Center)
-          .margin(4)
-          .onClick(() => {
-            this.selectedWeekType = type;
-          })
-        }, (type: number) => 'weektype_' + type.toString())
-      }
-    }
-    .width('100%')
-    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-    .alignItems(HorizontalAlign.Start)
-  }
-
-  @Builder
-  WeekSelector() {
-    Column() {
-      Row() {
-        Column() {
-          Text('开始周次')
-            .fontSize(14)
-            .fontColor('#333333')
-            .margin({ bottom: 8 })
-
-          TextPicker({ range: this.getWeekRange(), selected: this.selectedStartWeek - 1 })
-            .height(150)
-            .canLoop(false)
-            .selectedTextStyle({
-              color: '#5B9BD5',
-              font: { size: '18fp', weight: FontWeight.Medium }
-            })
-            .textStyle({
-              color: '#666666',
-              font: { size: '14fp', weight: FontWeight.Regular }
-            })
-            .disappearTextStyle({
-              color: '#999999',
-              font: { size: '12fp', weight: FontWeight.Regular }
-            })
-            .onChange((value: string | string[], index: number | number[]) => {
-              let idx: number = index as number;
-              this.selectedStartWeek = idx + 1;
-              if (this.selectedEndWeek < this.selectedStartWeek) {
-                this.selectedEndWeek = this.selectedStartWeek;
-              }
-            })
-        }
-        .layoutWeight(1)
-        .padding({ right: 8 })
-
-        Column() {
-          Text('结束周次')
-            .fontSize(14)
-            .fontColor('#333333')
-            .margin({ bottom: 8 })
-
-          TextPicker({ range: this.getWeekRange(), selected: this.selectedEndWeek - 1 })
-            .height(150)
-            .canLoop(false)
-            .selectedTextStyle({
-              color: '#5B9BD5',
-              font: { size: '18fp', weight: FontWeight.Medium }
-            })
-            .textStyle({
-              color: '#666666',
-              font: { size: '14fp', weight: FontWeight.Regular }
-            })
-            .disappearTextStyle({
-              color: '#999999',
-              font: { size: '12fp', weight: FontWeight.Regular }
-            })
-            .onChange((value: string | string[], index: number | number[]) => {
-              let idx: number = index as number;
-              this.selectedEndWeek = idx + 1;
-              if (this.selectedEndWeek < this.selectedStartWeek) {
-                this.selectedEndWeek = this.selectedStartWeek;
-              }
-            })
-        }
-        .layoutWeight(1)
-        .padding({ left: 8 })
-      }
-      .width('100%')
-    }
-    .width('100%')
-    .padding({ left: 16, right: 16, top: 12, bottom: 12 })
-  }
-
-  private getWeekRange(): string[] {
-    let range: string[] = [];
-    for (let i = 1; i <= this.viewModel.currentTotalWeeks; i++) {
-      range.push('第' + i + '周');
-    }
-    return range;
-  }
-
   private saveCourse(): void {
     if (this.inputName.trim() === '') {
       promptAction.showToast({ message: '请输入课程名称' });
@@ -817,15 +619,8 @@ struct CourseEditPage {
     let course = new CourseInfo(
       this.course.id,
       this.inputName,
-      this.inputTeacher,
-      this.inputLocation,
-      this.selectedWeekDay,
-      this.selectedStartSlot,
-      this.selectedEndSlot,
-      this.selectedStartWeek,
-      this.selectedEndWeek,
       Constants.COURSE_COLORS[this.selectedColorIndex],
-      this.selectedWeekType
+      this.timeSlots
     );
     if (this.viewModel.hasConflict(course, this.course.id)) {
       promptAction.showToast({ message: '课程时间冲突，请重新选择' });
@@ -840,11 +635,11 @@ struct CourseEditPage {
   }
 }
 
-@Component
+@ComponentV2
 struct CourseDetailPage {
-  @State course: CourseInfo = CourseInfo.createDefault();
-  @ObjectLink viewModel: CourseViewModel;
-  navPathStack: NavPathStack = new NavPathStack();
+  @Require @Param course: CourseInfo;
+  @Require @Param viewModel: CourseViewModel;
+  @Require @Param navPathStack: NavPathStack;
 
   build() {
     NavDestination() {
@@ -860,20 +655,42 @@ struct CourseDetailPage {
         .backgroundColor(this.course.color)
         .justifyContent(FlexAlign.Center)
         .padding(16)
+        Scroll() {
+          Column() {
+            ForEach(this.course.timeSlots, (ts: TimeSlot, index: number) => {
+              Column() {
+                if (this.course.timeSlots.length > 1) {
+                  Text('时间段' + (index + 1))
+                    .fontSize(15)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#5B9BD5')
+                    .width('100%')
+                    .margin({ bottom: 8, top: index > 0 ? 12 : 0 })
+                }
 
-        Column() {
-          this.DetailRow('教师', this.course.teacher);
-          this.DetailRow('教室', this.course.location);
-          this.DetailRow('星期', getWeekDayName(this.course.weekDay as WeekDay));
-          this.DetailRow('节次', '第' + this.course.startSlot + '-' + this.course.endSlot + '节');
-          this.DetailRow('周次', '第' + this.course.startWeek + '-' + this.course.endWeek + '周');
-          this.DetailRow('周类型', getWeekTypeName(this.course.weekType));
+                this.DetailRow('教师', ts.teacher);
+                this.DetailRow('教室', ts.location);
+                this.DetailRow('星期', getWeekDayName(ts.weekDay as WeekDay));
+                this.DetailRow('节次', '第' + ts.startSlot + '-' + ts.endSlot + '节');
+                this.DetailRow('周次', '第' + ts.startWeek + '-' + ts.endWeek + '周');
+                this.DetailRow('周类型', getWeekTypeName(ts.weekType));
+              }
+              .width('100%')
+              .padding(16)
+              .backgroundColor(Color.White)
+              .borderRadius(12)
+              .margin({ bottom: index < this.course.timeSlots.length - 1 ? 12 : 0 })
+            }, (ts: TimeSlot, index: number) => index.toString())
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, top: 0, bottom: 16 })
+          .alignItems(HorizontalAlign.Start)
         }
+        .scrollable(ScrollDirection.Vertical)
+        .scrollBar(BarState.Auto)
         .width('100%')
-        .padding(16)
-        .backgroundColor(Color.White)
-        .borderRadius(12)
-        .margin({ top: -20, left: 16, right: 16 })
+        .layoutWeight(1)
+        .align(Alignment.Top)
 
         Row() {
           Button('编辑')

@@ -1,10 +1,34 @@
 import { CourseInfo } from '../model/CourseModel';
 import { Constants } from '../common/constants/Constants';
 
-@Component
+@ComponentV2
 export struct CourseCard {
-  @ObjectLink course: CourseInfo;
-  onCardClick: (course: CourseInfo) => void = () => {};
+  @Require @Param course: CourseInfo;
+  @Param displayStartSlot: number = 0;
+  @Param displayEndSlot: number = 0;
+  @Param displayTeacher: string = '';
+  @Param displayLocation: string = '';
+  @Param onCardClick: (course: CourseInfo) => void = () => {};
+
+  private getEffectiveStartSlot(): number {
+    return this.displayStartSlot > 0 ? this.displayStartSlot : this.course.startSlot;
+  }
+
+  private getEffectiveEndSlot(): number {
+    return this.displayEndSlot > 0 ? this.displayEndSlot : this.course.endSlot;
+  }
+
+  private getEffectiveLocation(): string {
+    return this.displayLocation !== '' ? this.displayLocation : this.course.location;
+  }
+
+  private getEffectiveTeacher(): string {
+    return this.displayTeacher !== '' ? this.displayTeacher : this.course.teacher;
+  }
+
+  private getSlotSpan(): number {
+    return this.getEffectiveEndSlot() - this.getEffectiveStartSlot() + 1;
+  }
 
   build() {
     Column() {
@@ -13,25 +37,25 @@ export struct CourseCard {
           .fontSize(12)
           .fontColor(Color.White)
           .fontWeight(FontWeight.Bold)
-          .maxLines(this.course.endSlot - this.course.startSlot + 1 === 1 ? 2 : 3)
+          .maxLines(this.getSlotSpan() === 1 ? 2 : 3)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
 
-        Text('@' + this.course.location)
+        Text('@' + this.getEffectiveLocation())
           .fontSize(10)
           .fontColor(Color.White)
           .opacity(0.9)
-          .maxLines(this.course.endSlot - this.course.startSlot + 1 <= 2 ? 2 : 3)
+          .maxLines(this.getSlotSpan() <= 2 ? 2 : 3)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
           .margin({ top: 2 })
 
-        if (this.course.teacher !== '') {
-          Text(this.course.teacher)
+        if (this.getEffectiveTeacher() !== '') {
+          Text(this.getEffectiveTeacher())
             .fontSize(10)
             .fontColor(Color.White)
             .opacity(0.8)
-            .maxLines(this.course.endSlot - this.course.startSlot + 1 <= 2 ? 1 : 2)
+            .maxLines(this.getSlotSpan() <= 2 ? 1 : 2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
             .margin({ top: 2 })
@@ -46,9 +70,9 @@ export struct CourseCard {
       .alignItems(HorizontalAlign.Start)
     }
     .width('100%')
-    .height((this.course.endSlot - this.course.startSlot + 1) * Constants.SLOT_HEIGHT)
+    .height(this.getSlotSpan() * Constants.SLOT_HEIGHT)
     .padding({ left: 2, right: 2 })
-    .position({ x: 0, y: (this.course.startSlot - 1) * Constants.SLOT_HEIGHT })
+    .position({ x: 0, y: (this.getEffectiveStartSlot() - 1) * Constants.SLOT_HEIGHT })
     .clip(false)
     .onClick(() => {
       this.onCardClick(this.course);

@@ -1,18 +1,24 @@
 import { preferences } from '@kit.ArkData';
 import { Context } from '@kit.AbilityKit';
-import { CourseInfo, SemesterConfig, Timetable } from '../model/CourseModel';
+import { CourseInfo, SemesterConfig, Timetable, TimeSlot } from '../model/CourseModel';
 import { Constants } from '../common/constants/Constants';
 import { Logger } from '../common/utils/Logger';
 
-@Observed
+export class CourseSlotDisplay {
+  course: CourseInfo = CourseInfo.createDefault();
+  timeSlot: TimeSlot = TimeSlot.createDefault();
+}
+
+@ObservedV2
 export class CourseViewModel {
-  timetables: Timetable[] = [];
-  currentTimetableId: string = '';
-  currentTimetable: Timetable | null = null;
-  currentWeek: number = 1;
-  semesterStartDate: string = '';
-  viewMode: string = 'week';
-  selectedWeekDay: number = 0;
+  @Trace timetables: Timetable[] = [];
+  @Trace currentTimetableId: string = '';
+  @Trace currentTimetable: Timetable | null = null;
+  @Trace currentWeek: number = 1;
+  @Trace semesterStartDate: string = '';
+  @Trace viewMode: string = 'week';
+  @Trace selectedWeekDay: number = 0;
+  @Trace dataVersion: number = 0;
   private prefs: preferences.Preferences | null = null;
 
   get currentTimetableName(): string {
@@ -400,6 +406,7 @@ export class CourseViewModel {
     if (this.currentTimetable !== null) {
       this.currentTimetable.courses = [...this.currentTimetable.courses, course];
       this.timetables = [...this.timetables];
+      this.dataVersion = this.dataVersion + 1;
       await this.persistTimetables();
     }
   }
@@ -410,21 +417,13 @@ export class CourseViewModel {
     }
     for (let i = 0; i < this.currentTimetable.courses.length; i++) {
       if (this.currentTimetable.courses[i].id === course.id) {
-        this.currentTimetable.courses[i].name = course.name;
-        this.currentTimetable.courses[i].teacher = course.teacher;
-        this.currentTimetable.courses[i].location = course.location;
-        this.currentTimetable.courses[i].weekDay = course.weekDay;
-        this.currentTimetable.courses[i].startSlot = course.startSlot;
-        this.currentTimetable.courses[i].endSlot = course.endSlot;
-        this.currentTimetable.courses[i].color = course.color;
-        this.currentTimetable.courses[i].weekType = course.weekType;
-        this.currentTimetable.courses[i].startWeek = course.startWeek;
-        this.currentTimetable.courses[i].endWeek = course.endWeek;
+        this.currentTimetable.courses[i] = course;
         break;
       }
     }
     this.currentTimetable.courses = [...this.currentTimetable.courses];
     this.timetables = [...this.timetables];
+    this.dataVersion = this.dataVersion + 1;
     await this.persistTimetables();
   }
 
@@ -435,6 +434,7 @@ export class CourseViewModel {
     this.currentTimetable.courses = this.currentTimetable.courses.filter((course: CourseInfo) => course.id !== id);
     this.currentTimetable.courses = [...this.currentTimetable.courses];
     this.timetables = [...this.timetables];
+    this.dataVersion = this.dataVersion + 1;
     await this.persistTimetables();
   }
 
@@ -456,8 +456,12 @@ export class CourseViewModel {
     }
     let result: CourseInfo[] = [];
     for (let i = 0; i < this.currentTimetable.courses.length; i++) {
-      if (this.currentTimetable.courses[i].weekDay === weekDay && this.currentTimetable.courses[i].isOnWeek(this.currentWeek)) {
-        result.push(this.currentTimetable.courses[i]);
+      let course = this.currentTimetable.courses[i];
+      for (let j = 0; j < course.timeSlots.length; j++) {
+        if (course.timeSlots[j].weekDay === weekDay && course.timeSlots[j].isOnWeek(this.currentWeek)) {
+          result.push(course);
+          break;
+        }
       }
     }
     result.sort((a: CourseInfo, b: CourseInfo) => a.startSlot - b.startSlot);
@@ -470,8 +474,11 @@ export class CourseViewModel {
     }
     for (let i = 0; i < this.currentTimetable.courses.length; i++) {
       let course = this.currentTimetable.courses[i];
-      if (course.weekDay === weekDay && slot >= course.startSlot && slot <= course.endSlot && course.isOnWeek(this.currentWeek)) {
-        return course;
+      for (let j = 0; j < course.timeSlots.length; j++) {
+        let ts = course.timeSlots[j];
+        if (ts.weekDay === weekDay && slot >= ts.startSlot && slot <= ts.endSlot && ts.isOnWeek(this.currentWeek)) {
+          return course;
+        }
       }
     }
     return undefined;
@@ -486,15 +493,40 @@ export class CourseViewModel {
       if (existing.id === excludeId) {
         continue;
       }
-      if (existing.weekDay === course.weekDay) {
-        if (course.startSlot <= existing.endSlot && course.endSlot >= existing.startSlot) {
-          if (course.startWeek <= existing.endWeek && course.endWeek >= existing.startWeek) {
+      for (let j = 0; j < course.timeSlots.length; j++) {
+        let ts = course.timeSlots[j];
+        for (let k = 0; k < existing.timeSlots.length; k++) {
+          let ets = existing.timeSlots[k];
+          if (ts.weekDay === ets.weekDay &&
+            ts.startSlot <= ets.endSlot && ts.endSlot >= ets.startSlot &&
+            ts.startWeek <= ets.endWeek && ts.endWeek >= ets.startWeek) {
             return true;
           }
         }
       }
     }
     return false;
+  }
+
+  getCourseSlotsByDay(weekDay: number): CourseSlotDisplay[] {
+    if (this.currentTimetable === null) {
+      return [];
+    }
+    let result: CourseSlotDisplay[] = [];
+    for (let i = 0; i < this.currentTimetable.courses.length; i++) {
+      let course = this.currentTimetable.courses[i];
+      for (let j = 0; j < course.timeSlots.length; j++) {
+        let ts = course.timeSlots[j];
+        if (ts.weekDay === weekDay && ts.isOnWeek(this.currentWeek)) {
+          let csd = new CourseSlotDisplay();
+          csd.course = course;
+          csd.timeSlot = ts;
+          result.push(csd);
+        }
+      }
+    }
+    result.sort((a: CourseSlotDisplay, b: CourseSlotDisplay) => a.timeSlot.startSlot - b.timeSlot.startSlot);
+    return result;
   }
 
   prevWeek(): void {

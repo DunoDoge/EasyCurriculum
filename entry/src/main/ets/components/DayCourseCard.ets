@@ -1,24 +1,44 @@
 import { CourseInfo } from '../model/CourseModel';
 import { Constants } from '../common/constants/Constants';
 
-@Component
+@ComponentV2
 export struct DayCourseCard {
-  @ObjectLink course: CourseInfo;
-  onCardClick: (course: CourseInfo) => void = () => {};
+  @Require @Param course: CourseInfo;
+  @Param displayStartSlot: number = 0;
+  @Param displayEndSlot: number = 0;
+  @Param displayTeacher: string = '';
+  @Param displayLocation: string = '';
+  @Param onCardClick: (course: CourseInfo) => void = () => {};
 
   private DAY_CARD_HEIGHT: number = 80;
   private TIME_AXIS_WIDTH: number = 56;
+
+  private getEffectiveStartSlot(): number {
+    return this.displayStartSlot > 0 ? this.displayStartSlot : this.course.startSlot;
+  }
+
+  private getEffectiveEndSlot(): number {
+    return this.displayEndSlot > 0 ? this.displayEndSlot : this.course.endSlot;
+  }
+
+  private getEffectiveLocation(): string {
+    return this.displayLocation !== '' ? this.displayLocation : this.course.location;
+  }
+
+  private getEffectiveTeacher(): string {
+    return this.displayTeacher !== '' ? this.displayTeacher : this.course.teacher;
+  }
 
   build() {
     Row() {
       // 左侧时间轴
       Column() {
-        Text(Constants.SLOT_TIMES[this.course.startSlot])
+        Text(Constants.SLOT_TIMES[this.getEffectiveStartSlot()])
           .fontSize(12)
           .fontColor('#666666')
           .fontWeight(FontWeight.Medium)
 
-        Text(Constants.SLOT_TIMES[this.course.endSlot])
+        Text(Constants.SLOT_TIMES[this.getEffectiveEndSlot()])
           .fontSize(12)
           .fontColor('#999999')
           .margin({ top: 4 })
@@ -55,7 +75,7 @@ export struct DayCourseCard {
             .width('100%')
 
           Row() {
-            Text('第' + this.course.startSlot + '-' + this.course.endSlot + '节')
+            Text('第' + this.getEffectiveStartSlot() + '-' + this.getEffectiveEndSlot() + '节')
               .fontSize(12)
               .fontColor('#666666')
 
@@ -64,8 +84,8 @@ export struct DayCourseCard {
           .margin({ top: 4 })
 
           Row() {
-            if (this.course.location !== '') {
-              Text('@' + this.course.location)
+            if (this.getEffectiveLocation() !== '') {
+              Text('@' + this.getEffectiveLocation())
                 .fontSize(12)
                 .fontColor('#666666')
                 .maxLines(1)
@@ -76,8 +96,8 @@ export struct DayCourseCard {
                 .layoutWeight(1)
             }
 
-            if (this.course.teacher !== '') {
-              Text(this.course.teacher)
+            if (this.getEffectiveTeacher() !== '') {
+              Text(this.getEffectiveTeacher())
                 .fontSize(12)
                 .fontColor('#999999')
                 .maxLines(1)
