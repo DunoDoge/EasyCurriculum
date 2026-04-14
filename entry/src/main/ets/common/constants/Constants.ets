@@ -13,6 +13,7 @@ export class Constants {
   static readonly TOTAL_WEEKS: number = 20;
   static readonly TIMETABLES_KEY: string = 'timetables';
   static readonly CURRENT_TIMETABLE_ID_KEY: string = 'current_timetable_id';
+  static readonly SWIPE_THRESHOLD: number = 50;
 
   static readonly SLOT_TIMES: Record<number, string> = {
     1: '08:00',

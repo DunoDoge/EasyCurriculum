@@ -12,6 +12,8 @@ export struct DayView {
   @Param onBack: () => void = () => {};
   @Param onCourseClick: (course: CourseInfo) => void = () => {};
   @Param onSlotClick: (slot: number) => void = () => {};
+  @Param onSwipePrev: () => void = () => {};
+  @Param onSwipeNext: () => void = () => {};
 
   build() {
     Column() {
@@ -68,5 +70,15 @@ export struct DayView {
     .width('100%')
     .height('100%')
     .backgroundColor('#F5F5F5')
+    .parallelGesture(
+      PanGesture({ fingers: 1, direction: PanDirection.Horizontal, distance: 50 })
+        .onActionEnd((event: GestureEvent) => {
+          if (event.offsetX < -Constants.SWIPE_THRESHOLD) {
+            this.onSwipeNext();
+          } else if (event.offsetX > Constants.SWIPE_THRESHOLD) {
+            this.onSwipePrev();
+          }
+        })
+    )
   }
 }

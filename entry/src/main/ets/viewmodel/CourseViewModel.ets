@@ -625,6 +625,34 @@ export class CourseViewModel {
     }
   }
 
+  prevDay(): void {
+    if (this.selectedWeekDay > 1) {
+      this.selectedWeekDay = this.selectedWeekDay - 1;
+    } else if (this.currentWeek > 1) {
+      this.currentWeek = this.currentWeek - 1;
+      this.selectedWeekDay = (this.currentTimetable?.showWeekend ?? true) ? 7 : 5;
+    }
+  }
+
+  nextDay(): void {
+    let maxDay = (this.currentTimetable?.showWeekend ?? true) ? 7 : 5;
+    if (this.selectedWeekDay < maxDay) {
+      this.selectedWeekDay = this.selectedWeekDay + 1;
+    } else if (this.currentWeek < this.currentTotalWeeks) {
+      this.currentWeek = this.currentWeek + 1;
+      this.selectedWeekDay = 1;
+    }
+  }
+
+  isAtFirstDay(): boolean {
+    return this.currentWeek === 1 && this.selectedWeekDay === 1;
+  }
+
+  isAtLastDay(): boolean {
+    let maxDay = (this.currentTimetable?.showWeekend ?? true) ? 7 : 5;
+    return this.currentWeek === this.currentTotalWeeks && this.selectedWeekDay === maxDay;
+  }
+
   private generateId(): string {
     return Date.now().toString() + Math.floor(Math.random() * 1000).toString();
   }

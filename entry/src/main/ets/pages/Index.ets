@@ -1,5 +1,5 @@
 import { CourseViewModel } from '../viewmodel/CourseViewModel';
-import { CourseInfo, ConflictDetail, getWeekTypeName, TimeSlot } from '../model/CourseModel';
+import { CourseInfo, getWeekTypeName, TimeSlot } from '../model/CourseModel';
 import { WeekDay, getWeekDayList, getWeekDayName } from '../model/WeekDay';
 import { Constants } from '../common/constants/Constants';
 import { CourseCard } from '../components/CourseCard';
@@ -120,6 +120,16 @@ struct Index {
           .scrollBar(BarState.Auto)
           .layoutWeight(1)
           .id('weekScroll_' + this.viewModel.dataVersion)
+          .parallelGesture(
+            PanGesture({ fingers: 1, direction: PanDirection.Horizontal, distance: 50 })
+              .onActionEnd((event: GestureEvent) => {
+                if (event.offsetX < -Constants.SWIPE_THRESHOLD) {
+                  this.viewModel.nextWeek();
+                } else if (event.offsetX > Constants.SWIPE_THRESHOLD) {
+                  this.viewModel.prevWeek();
+                }
+              })
+          )
         } else {
           DayView({
             selectedWeekDay: this.viewModel.selectedWeekDay,
@@ -146,6 +156,12 @@ struct Index {
                 name: 'CourseEditPage',
                 param: newCourse
               });
+            },
+            onSwipePrev: () => {
+              this.viewModel.prevDay();
+            },
+            onSwipeNext: () => {
+              this.viewModel.nextDay();
             }
           })
         }
