@@ -1,5 +1,5 @@
 import { CourseViewModel } from '../viewmodel/CourseViewModel';
-import { CourseInfo, WeekType, getWeekTypeName, TimeSlot } from '../model/CourseModel';
+import { CourseInfo, ConflictDetail, getWeekTypeName, TimeSlot } from '../model/CourseModel';
 import { WeekDay, getWeekDayList, getWeekDayName } from '../model/WeekDay';
 import { Constants } from '../common/constants/Constants';
 import { CourseCard } from '../components/CourseCard';
@@ -9,6 +9,7 @@ import { DayView } from '../components/DayView';
 import { SemesterSettingPage } from './SemesterSettingPage';
 import { Timetable } from '../model/CourseModel';
 import { promptAction } from '@kit.ArkUI';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { TimeSlotCard } from '../components/TimeSlotCard';
 import { CourseSlotDisplay } from '../viewmodel/CourseViewModel';
 
@@ -352,7 +353,12 @@ struct Index {
                 .margin({ left: 12 })
                 .onClick(() => {
                   if (this.newTimetableName.trim() === '') {
-                    promptAction.showToast({ message: '请输入课表名称' });
+                    try {
+                      promptAction.showToast({ message: '请输入课表名称' });
+                    } catch (error) {
+                      let e: BusinessError = error as BusinessError;
+                      console.error('showToast error: ' + JSON.stringify(e));
+                    }
                     return;
                   }
                   let newTimetable = this.viewModel.createTimetableSync(this.newTimetableName.trim(), '');
@@ -453,6 +459,34 @@ struct CourseEditPage {
   @Local inputName: string = '';
   @Local timeSlots: TimeSlot[] = [];
 
+  formatConflictWeeks(weeks: number[]): string {
+    if (weeks.length === 0) {
+      return '';
+    }
+    let parts: string[] = [];
+    let rangeStart = weeks[0];
+    let rangeEnd = weeks[0];
+    for (let i = 1; i < weeks.length; i++) {
+      if (weeks[i] === rangeEnd + 1) {
+        rangeEnd = weeks[i];
+      } else {
+        if (rangeStart === rangeEnd) {
+          parts.push(`${rangeStart}`);
+        } else {
+          parts.push(`${rangeStart}-${rangeEnd}`);
+        }
+        rangeStart = weeks[i];
+        rangeEnd = weeks[i];
+      }
+    }
+    if (rangeStart === rangeEnd) {
+      parts.push(`${rangeStart}`);
+    } else {
+      parts.push(`${rangeStart}-${rangeEnd}`);
+    }
+    return parts.join(',') + '周';
+  }
+
   aboutToAppear(): void {
     this.inputName = this.course.name;
     // 深拷贝timeSlots以避免直接修改原数据
@@ -548,7 +582,7 @@ struct CourseEditPage {
               })
             }
             .padding({ left: 16, right: 16, top: 6, bottom: 6 })
-          }, (ts: TimeSlot, index: number) => index.toString())
+          }, (_: TimeSlot, index: number) => index.toString())
 
           // 添加时间段按钮
           Row() {
@@ -613,7 +647,12 @@ struct CourseEditPage {
 
   private saveCourse(): void {
     if (this.inputName.trim() === '') {
-      promptAction.showToast({ message: '请输入课程名称' });
+      try {
+        promptAction.showToast({ message: '请输入课程名称' });
+      } catch (error) {
+        let e: BusinessError = error as BusinessError;
+        console.error('showToast error: ' + JSON.stringify(e));
+      }
       return;
     }
     let course = new CourseInfo(
@@ -622,8 +661,17 @@ struct CourseEditPage {
       Constants.COURSE_COLORS[this.selectedColorIndex],
       this.timeSlots
     );
-    if (this.viewModel.hasConflict(course, this.course.id)) {
-      promptAction.showToast({ message: '课程时间冲突，请重新选择' });
+    let conflictDetail = this.viewModel.findConflict(course, this.course.id);
+    if (conflictDetail !== undefined) {
+      let weekDayName = getWeekDayName(conflictDetail.conflictWeekDay);
+      let weeksStr = this.formatConflictWeeks(conflictDetail.conflictWeeks);
+      let msg = `与"${conflictDetail.conflictCourseName}"在${weekDayName}第${conflictDetail.conflictStartSlot}-${conflictDetail.conflictEndSlot}节的第${weeksStr}存在冲突`;
+      try {
+        promptAction.showToast({ message: msg });
+      } catch (error) {
+        let e: BusinessError = error as BusinessError;
+        console.error('showToast error: ' + JSON.stringify(e));
+      }
       return;
     }
     if (this.course.id === '') {
@@ -680,7 +728,7 @@ struct CourseDetailPage {
               .backgroundColor(Color.White)
               .borderRadius(12)
               .margin({ bottom: index < this.course.timeSlots.length - 1 ? 12 : 0 })
-            }, (ts: TimeSlot, index: number) => index.toString())
+            }, (_: TimeSlot, index: number) => index.toString())
           }
           .width('100%')
           .padding({ left: 16, right: 16, top: 0, bottom: 16 })

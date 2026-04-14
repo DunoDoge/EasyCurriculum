@@ -63,7 +63,7 @@ export struct WeekSlotPickerDialog {
               color: '#999999',
               font: { size: '12fp', weight: FontWeight.Regular }
             })
-            .onChange((value: string | string[], index: number | number[]) => {
+            .onChange((_: string | string[], index: number | number[]) => {
               let idx: number = index as number;
               this.tempStartValue = idx + 1;
               if (this.tempEndValue < this.tempStartValue) {
@@ -95,7 +95,7 @@ export struct WeekSlotPickerDialog {
               color: '#999999',
               font: { size: '12fp', weight: FontWeight.Regular }
             })
-            .onChange((value: string | string[], index: number | number[]) => {
+            .onChange((_: string | string[], index: number | number[]) => {
               let idx: number = index as number;
               this.tempEndValue = idx + 1;
               if (this.tempEndValue < this.tempStartValue) {

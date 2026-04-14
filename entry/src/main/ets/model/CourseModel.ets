@@ -13,6 +13,23 @@ export function getWeekTypeName(type: WeekType): string {
   return names[type];
 }
 
+export class ConflictDetail {
+  conflictCourseName: string = '';
+  conflictWeekDay: number = 1;
+  conflictStartSlot: number = 1;
+  conflictEndSlot: number = 2;
+  conflictWeeks: number[] = [];
+
+  constructor(conflictCourseName: string, conflictWeekDay: number, conflictStartSlot: number,
+    conflictEndSlot: number, conflictWeeks: number[]) {
+    this.conflictCourseName = conflictCourseName;
+    this.conflictWeekDay = conflictWeekDay;
+    this.conflictStartSlot = conflictStartSlot;
+    this.conflictEndSlot = conflictEndSlot;
+    this.conflictWeeks = conflictWeeks;
+  }
+}
+
 @ObservedV2
 export class TimeSlot {
   @Trace weekDay: number = 1;

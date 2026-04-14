@@ -1,5 +1,6 @@
 import { CourseViewModel } from '../viewmodel/CourseViewModel';
 import { promptAction } from '@kit.ArkUI';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 @ComponentV2
 export struct SemesterSettingPage {
@@ -98,10 +99,10 @@ export struct SemesterSettingPage {
               end: new Date(2030, 11, 31),
               selected: new Date(this.selectedYear, this.selectedMonth - 1, this.selectedDay)
             })
-              .onChange((value: DatePickerResult) => {
-                this.selectedYear = value.year as number;
-                this.selectedMonth = (value.month as number) + 1;
-                this.selectedDay = value.day as number;
+              .onDateChange((value: Date) => {
+                this.selectedYear = value.getFullYear();
+                this.selectedMonth = value.getMonth() + 1;
+                this.selectedDay = value.getDate();
                 this.updateSelectedDate();
               })
           }
@@ -257,7 +258,12 @@ export struct SemesterSettingPage {
               .margin({ left: 12 })
               .onClick(async () => {
                 if (this.timetableName.trim() === '') {
-                  promptAction.showToast({ message: '请输入课表名称' });
+                  try {
+                    promptAction.showToast({ message: '请输入课表名称' });
+                  } catch (error) {
+                    let e: BusinessError = error as BusinessError;
+                    console.error('showToast error: ' + JSON.stringify(e));
+                  }
                   return;
                 }
                 if (this.viewModel.currentTimetable !== null) {

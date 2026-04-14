@@ -1,6 +1,7 @@
 import { TimeSlot, WeekType, getWeekTypeName } from '../model/CourseModel';
 import { WeekDay, getWeekDayList, getWeekDayName } from '../model/WeekDay';
 import { WeekSlotPickerDialog } from './WeekSlotPickerDialog';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 @ComponentV2
 export struct TimeSlotCard {
@@ -195,7 +196,12 @@ export struct TimeSlotCard {
               this.tempTeacher = this.timeSlot.teacher;
               this.editingTeacher = true;
               setTimeout(() => {
-                this.getUIContext()?.getFocusController()?.requestFocus('teacherInput_' + this.slotIndex);
+                try {
+                  this.getUIContext()?.getFocusController()?.requestFocus('teacherInput_' + this.slotIndex);
+                } catch (error) {
+                  let e: BusinessError = error as BusinessError;
+                  console.error('requestFocus error: ' + JSON.stringify(e));
+                }
               }, 50);
             })
         }
@@ -238,7 +244,12 @@ export struct TimeSlotCard {
               this.tempLocation = this.timeSlot.location;
               this.editingLocation = true;
               setTimeout(() => {
-                this.getUIContext()?.getFocusController()?.requestFocus('locationInput_' + this.slotIndex);
+                try {
+                  this.getUIContext()?.getFocusController()?.requestFocus('locationInput_' + this.slotIndex);
+                } catch (error) {
+                  let e: BusinessError = error as BusinessError;
+                  console.error('requestFocus error: ' + JSON.stringify(e));
+                }
               }, 50);
             })
         }

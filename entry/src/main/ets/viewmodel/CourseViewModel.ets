@@ -1,6 +1,6 @@
 import { preferences } from '@kit.ArkData';
 import { Context } from '@kit.AbilityKit';
-import { CourseInfo, SemesterConfig, Timetable, TimeSlot } from '../model/CourseModel';
+import { CourseInfo, ConflictDetail, SemesterConfig, Timetable, TimeSlot, WeekType } from '../model/CourseModel';
 import { Constants } from '../common/constants/Constants';
 import { Logger } from '../common/utils/Logger';
 
@@ -484,6 +484,56 @@ export class CourseViewModel {
     return undefined;
   }
 
+  static hasOddWeekInRange(start: number, end: number): boolean {
+    if (start > end) {
+      return false;
+    }
+    if (start % 2 === 1) {
+      return true;
+    }
+    return start + 1 <= end;
+  }
+
+  static hasEvenWeekInRange(start: number, end: number): boolean {
+    if (start > end) {
+      return false;
+    }
+    if (start % 2 === 0) {
+      return true;
+    }
+    return start + 1 <= end;
+  }
+
+  static weeksOverlap(ts: TimeSlot, ets: TimeSlot): boolean {
+    let overlapStart = Math.max(ts.startWeek, ets.startWeek);
+    let overlapEnd = Math.min(ts.endWeek, ets.endWeek);
+    if (overlapStart > overlapEnd) {
+      return false;
+    }
+    // 单周 vs 双周：永不重叠
+    if ((ts.weekType === WeekType.ODD_WEEK && ets.weekType === WeekType.EVEN_WEEK) ||
+      (ts.weekType === WeekType.EVEN_WEEK && ets.weekType === WeekType.ODD_WEEK)) {
+      return false;
+    }
+    // 每周 vs 每周：交集区间非空即重叠
+    if (ts.weekType === WeekType.EVERY_WEEK && ets.weekType === WeekType.EVERY_WEEK) {
+      return true;
+    }
+    // 需要奇数周的场景：每周vs单周、单周vs每周、单周vs单周
+    if ((ts.weekType === WeekType.EVERY_WEEK && ets.weekType === WeekType.ODD_WEEK) ||
+      (ts.weekType === WeekType.ODD_WEEK && ets.weekType === WeekType.EVERY_WEEK) ||
+      (ts.weekType === WeekType.ODD_WEEK && ets.weekType === WeekType.ODD_WEEK)) {
+      return CourseViewModel.hasOddWeekInRange(overlapStart, overlapEnd);
+    }
+    // 需要偶数周的场景：每周vs双周、双周vs每周、双周vs双周
+    if ((ts.weekType === WeekType.EVERY_WEEK && ets.weekType === WeekType.EVEN_WEEK) ||
+      (ts.weekType === WeekType.EVEN_WEEK && ets.weekType === WeekType.EVERY_WEEK) ||
+      (ts.weekType === WeekType.EVEN_WEEK && ets.weekType === WeekType.EVEN_WEEK)) {
+      return CourseViewModel.hasEvenWeekInRange(overlapStart, overlapEnd);
+    }
+    return false;
+  }
+
   hasConflict(course: CourseInfo, excludeId: string): boolean {
     if (this.currentTimetable === null) {
       return false;
@@ -499,13 +549,47 @@ export class CourseViewModel {
           let ets = existing.timeSlots[k];
           if (ts.weekDay === ets.weekDay &&
             ts.startSlot <= ets.endSlot && ts.endSlot >= ets.startSlot &&
-            ts.startWeek <= ets.endWeek && ts.endWeek >= ets.startWeek) {
+            CourseViewModel.weeksOverlap(ts, ets)) {
             return true;
           }
         }
       }
     }
     return false;
+  }
+
+  findConflict(course: CourseInfo, excludeId: string): ConflictDetail | undefined {
+    if (this.currentTimetable === null) {
+      return undefined;
+    }
+    for (let i = 0; i < this.currentTimetable.courses.length; i++) {
+      let existing = this.currentTimetable.courses[i];
+      if (existing.id === excludeId) {
+        continue;
+      }
+      for (let j = 0; j < course.timeSlots.length; j++) {
+        let ts = course.timeSlots[j];
+        for (let k = 0; k < existing.timeSlots.length; k++) {
+          let ets = existing.timeSlots[k];
+          if (ts.weekDay === ets.weekDay &&
+            ts.startSlot <= ets.endSlot && ts.endSlot >= ets.startSlot) {
+            let overlapStart = Math.max(ts.startWeek, ets.startWeek);
+            let overlapEnd = Math.min(ts.endWeek, ets.endWeek);
+            let conflictWeeks: number[] = [];
+            for (let w = overlapStart; w <= overlapEnd; w++) {
+              if (ts.isOnWeek(w) && ets.isOnWeek(w)) {
+                conflictWeeks.push(w);
+              }
+            }
+            if (conflictWeeks.length > 0) {
+              return new ConflictDetail(existing.name, ts.weekDay, ts.startSlot, ts.endSlot,
+                conflictWeeks);
+            }
+          }
+        }
+      }
+    }
+    return undefined;
   }
 
   getCourseSlotsByDay(weekDay: number): CourseSlotDisplay[] {
