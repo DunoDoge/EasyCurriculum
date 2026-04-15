@@ -8,8 +8,13 @@ import { TimeSlotHeader } from '../components/TimeSlotHeader';
 import { DayView } from '../components/DayView';
 import { SemesterSettingPage } from './SemesterSettingPage';
 import { ImportExportUtil } from '../common/utils/ImportExportUtil';
+import { ShareUtil } from '../common/utils/ShareUtil';
+import { Logger } from '../common/utils/Logger';
 import { promptAction } from '@kit.ArkUI';
+import { componentSnapshot } from '@kit.ArkUI';
+import { image } from '@kit.ImageKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { common } from '@kit.AbilityKit';
 import { TimeSlotCard } from '../components/TimeSlotCard';
 import { CourseSlotDisplay } from '../viewmodel/CourseViewModel';
 
@@ -23,11 +28,12 @@ struct Index {
   @Local showNewTimetableDialog: boolean = false;
   @Local newTimetableName: string = '';
   @Local showImportExportPanel: boolean = false;
+  @Local showSharePanel: boolean = false;
   @Local showImportPreview: boolean = false;
   @Local importPreviewTimetable: Timetable | null = null;
 
   aboutToAppear(): void {
-    this.viewModel.init(this.getUIContext().getHostContext() as Context);
+    this.viewModel.init(this.getUIContext().getHostContext() as common.UIAbilityContext);
   }
 
   private showToast(message: string): void {
@@ -44,7 +50,7 @@ struct Index {
       this.showToast('当前没有课表可导出');
       return;
     }
-    let context = this.getUIContext().getHostContext() as Context;
+    let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     let success = await ImportExportUtil.exportToFile(context, this.viewModel.currentTimetable);
     if (success) {
       this.showToast('导出成功');
@@ -58,7 +64,7 @@ struct Index {
       this.showToast('当前没有课表可导出');
       return;
     }
-    let context = this.getUIContext().getHostContext() as Context;
+    let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     let success = await ImportExportUtil.exportToClipboard(context, this.viewModel.currentTimetable);
     if (success) {
       this.showToast('已复制到剪贴板');
@@ -68,7 +74,7 @@ struct Index {
   }
 
   private async handleImportFromFile(): Promise<void> {
-    let context = this.getUIContext().getHostContext() as Context;
+    let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     let timetable = await ImportExportUtil.importFromFile(context);
     if (timetable !== null) {
       this.importPreviewTimetable = timetable;
@@ -79,7 +85,7 @@ struct Index {
   }
 
   private async handleImportFromClipboard(): Promise<void> {
-    let context = this.getUIContext().getHostContext() as Context;
+    let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
     let timetable = await ImportExportUtil.importFromClipboard(context);
     if (timetable !== null) {
       this.importPreviewTimetable = timetable;
@@ -98,6 +104,71 @@ struct Index {
     this.showImportPreview = false;
     this.importPreviewTimetable = null;
     this.showToast('导入成功');
+  }
+
+  private async generateScheduleImage(): Promise<string | null> {
+    try {
+      let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+      let componentId = this.viewModel.viewMode === 'week' ? 'weekViewForShare' : 'dayViewForShare';
+
+      let pixelMap = await componentSnapshot.get(componentId);
+
+      let imagePacker = image.createImagePacker();
+      let packOpts: image.PackingOption = { format: 'image/png', quality: 100 };
+      let arrayBuffer = await imagePacker.packing(pixelMap, packOpts);
+
+      let fileName = this.viewModel.currentTimetableName + '_课表.png';
+      let fileUri = await ShareUtil.saveToTempFile(context, arrayBuffer, fileName);
+
+      Logger.info('Generate schedule image success: ' + fileUri);
+      return fileUri;
+    } catch (err) {
+      let error = err as Error;
+      Logger.error('Generate schedule image failed: ' + error.message);
+      return null;
+    }
+  }
+
+  private async handleShareAsImage(): Promise<void> {
+    if (this.viewModel.currentTimetable === null) {
+      this.showToast('当前没有课表可分享');
+      return;
+    }
+
+    let imageUri = await this.generateScheduleImage();
+    if (imageUri === null) {
+      this.showToast('图片生成失败，请重试');
+      return;
+    }
+
+    let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+    let success = await ShareUtil.shareImage(context, imageUri);
+
+    if (!success) {
+      ShareUtil.cleanupTempFile(imageUri);
+      this.showToast('分享失败或已取消');
+    }
+  }
+
+  private async handleShareAsFile(): Promise<void> {
+    if (this.viewModel.currentTimetable === null) {
+      this.showToast('当前没有课表可分享');
+      return;
+    }
+
+    let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+
+    let jsonStr = ImportExportUtil.timetableToJsonString(this.viewModel.currentTimetable);
+
+    let fileName = this.viewModel.currentTimetableName + '_课表.json';
+    let fileUri = await ShareUtil.saveToTempFile(context, jsonStr, fileName);
+
+    let success = await ShareUtil.shareFile(context, fileUri);
+
+    if (!success) {
+      ShareUtil.cleanupTempFile(fileUri);
+      this.showToast('分享失败或已取消');
+    }
   }
 
   build() {
@@ -161,6 +232,21 @@ struct Index {
           .margin({ left: 12 })
           .onClick(() => {
             this.showImportExportPanel = !this.showImportExportPanel;
+            this.showSharePanel = false;
+          })
+
+          Button() {
+            Image($r('app.media.ic_public_share'))
+              .width(24)
+          }
+          .type(ButtonType.Circle)
+          .width(36)
+          .height(36)
+          .backgroundColor('#E0E0E0')
+          .margin({ left: 12 })
+          .onClick(() => {
+            this.showSharePanel = !this.showSharePanel;
+            this.showImportExportPanel = false;
           })
 
           Button() {
@@ -206,7 +292,7 @@ struct Index {
           .scrollable(ScrollDirection.Vertical)
           .scrollBar(BarState.Auto)
           .layoutWeight(1)
-          .id('weekScroll_' + this.viewModel.dataVersion)
+          .id('weekViewForShare')
           .parallelGesture(
             PanGesture({ fingers: 1, direction: PanDirection.Horizontal, distance: 50 })
               .onActionEnd((event: GestureEvent) => {
@@ -540,6 +626,42 @@ struct Index {
             .shadow({ radius: 8, color: '#33000000', offsetY: 2 })
           }
           .position({ x: '65%', y: 52 })
+          .zIndex(999)
+        }
+
+        // 分享弹出菜单
+        if (this.showSharePanel) {
+          Column() {
+            Column() {
+              Text('分享为图片')
+                .fontSize(15)
+                .fontColor('#333333')
+                .width('100%')
+                .height(44)
+                .padding({ left: 16, right: 16 })
+                .onClick(() => {
+                  this.showSharePanel = false;
+                  this.handleShareAsImage();
+                })
+
+              Divider().color('#F0F0F0').margin({ left: 12, right: 12 })
+
+              Text('分享为文件')
+                .fontSize(15)
+                .fontColor('#333333')
+                .width('100%')
+                .height(44)
+                .padding({ left: 16, right: 16 })
+                .onClick(() => {
+                  this.showSharePanel = false;
+                  this.handleShareAsFile();
+                })
+            }
+            .backgroundColor(Color.White)
+            .borderRadius(8)
+            .shadow({ radius: 8, color: '#33000000', offsetY: 2 })
+          }
+          .position({ x: '55%', y: 52 })
           .zIndex(999)
         }
 

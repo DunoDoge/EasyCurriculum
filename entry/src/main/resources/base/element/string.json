@@ -15,6 +15,10 @@
     {
       "name": "read_pasteboard_reason",
       "value": "用于从剪贴板导入课表数据"
+    },
+    {
+      "name": "file_access_persist_reason",
+      "value": "用于分享课程表文件给其他应用"
     }
   ]
 }
