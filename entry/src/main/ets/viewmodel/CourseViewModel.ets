@@ -653,6 +653,19 @@ export class CourseViewModel {
     return this.currentWeek === this.currentTotalWeeks && this.selectedWeekDay === maxDay;
   }
 
+  async importTimetable(timetable: Timetable): Promise<Timetable> {
+    // 为导入的课表生成新ID，避免ID冲突
+    timetable.id = Timetable.generateId();
+    // 为导入的课表中的每门课程生成新ID
+    for (let i = 0; i < timetable.courses.length; i++) {
+      timetable.courses[i].id = this.generateId();
+    }
+    this.timetables.push(timetable);
+    await this.persistTimetables();
+    Logger.info('Imported timetable: ' + timetable.name + ', courses: ' + timetable.courses.length);
+    return timetable;
+  }
+
   private generateId(): string {
     return Date.now().toString() + Math.floor(Math.random() * 1000).toString();
   }

@@ -1,5 +1,5 @@
 import { CourseViewModel } from '../viewmodel/CourseViewModel';
-import { CourseInfo, getWeekTypeName, TimeSlot } from '../model/CourseModel';
+import { CourseInfo, getWeekTypeName, TimeSlot, Timetable } from '../model/CourseModel';
 import { WeekDay, getWeekDayList, getWeekDayName } from '../model/WeekDay';
 import { Constants } from '../common/constants/Constants';
 import { CourseCard } from '../components/CourseCard';
@@ -7,7 +7,7 @@ import { WeekHeader } from '../components/WeekHeader';
 import { TimeSlotHeader } from '../components/TimeSlotHeader';
 import { DayView } from '../components/DayView';
 import { SemesterSettingPage } from './SemesterSettingPage';
-import { Timetable } from '../model/CourseModel';
+import { ImportExportUtil } from '../common/utils/ImportExportUtil';
 import { promptAction } from '@kit.ArkUI';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { TimeSlotCard } from '../components/TimeSlotCard';
@@ -22,9 +22,82 @@ struct Index {
   @Local showTimetablePicker: boolean = false;
   @Local showNewTimetableDialog: boolean = false;
   @Local newTimetableName: string = '';
+  @Local showImportExportPanel: boolean = false;
+  @Local showImportPreview: boolean = false;
+  @Local importPreviewTimetable: Timetable | null = null;
 
   aboutToAppear(): void {
     this.viewModel.init(this.getUIContext().getHostContext() as Context);
+  }
+
+  private showToast(message: string): void {
+    try {
+      promptAction.showToast({ message: message });
+    } catch (error) {
+      let e: BusinessError = error as BusinessError;
+      console.error('showToast error: ' + JSON.stringify(e));
+    }
+  }
+
+  private async handleExportToFile(): Promise<void> {
+    if (this.viewModel.currentTimetable === null) {
+      this.showToast('当前没有课表可导出');
+      return;
+    }
+    let context = this.getUIContext().getHostContext() as Context;
+    let success = await ImportExportUtil.exportToFile(context, this.viewModel.currentTimetable);
+    if (success) {
+      this.showToast('导出成功');
+    } else {
+      this.showToast('导出失败或已取消');
+    }
+  }
+
+  private async handleExportToClipboard(): Promise<void> {
+    if (this.viewModel.currentTimetable === null) {
+      this.showToast('当前没有课表可导出');
+      return;
+    }
+    let context = this.getUIContext().getHostContext() as Context;
+    let success = await ImportExportUtil.exportToClipboard(context, this.viewModel.currentTimetable);
+    if (success) {
+      this.showToast('已复制到剪贴板');
+    } else {
+      this.showToast('导出到剪贴板失败');
+    }
+  }
+
+  private async handleImportFromFile(): Promise<void> {
+    let context = this.getUIContext().getHostContext() as Context;
+    let timetable = await ImportExportUtil.importFromFile(context);
+    if (timetable !== null) {
+      this.importPreviewTimetable = timetable;
+      this.showImportPreview = true;
+    } else {
+      this.showToast('导入失败或已取消');
+    }
+  }
+
+  private async handleImportFromClipboard(): Promise<void> {
+    let context = this.getUIContext().getHostContext() as Context;
+    let timetable = await ImportExportUtil.importFromClipboard(context);
+    if (timetable !== null) {
+      this.importPreviewTimetable = timetable;
+      this.showImportPreview = true;
+    } else {
+      this.showToast('剪贴板中没有有效的课表数据');
+    }
+  }
+
+  private async confirmImport(): Promise<void> {
+    if (this.importPreviewTimetable === null) {
+      return;
+    }
+    let imported = await this.viewModel.importTimetable(this.importPreviewTimetable);
+    await this.viewModel.switchTimetable(imported.id);
+    this.showImportPreview = false;
+    this.importPreviewTimetable = null;
+    this.showToast('导入成功');
   }
 
   build() {
@@ -75,6 +148,20 @@ struct Index {
               param: CourseInfo.createDefault()
             });
             })
+
+          Button() {
+            Text('⇄')
+              .fontSize(18)
+              .fontColor('#666666')
+          }
+          .type(ButtonType.Circle)
+          .width(36)
+          .height(36)
+          .backgroundColor('#E0E0E0')
+          .margin({ left: 12 })
+          .onClick(() => {
+            this.showImportExportPanel = !this.showImportExportPanel;
+          })
 
           Button() {
             Image($r('app.media.ic_public_settings'))
@@ -392,6 +479,229 @@ struct Index {
           .backgroundColor(Color.White)
           .borderRadius({ topLeft: 16, topRight: 16 })
           .shadow({ radius: 20, color: '#33000000', offsetY: -4 })
+        }
+
+        // 导入导出弹出菜单
+        if (this.showImportExportPanel) {
+          Column() {
+            Column() {
+              Text('导出为文件')
+                .fontSize(15)
+                .fontColor('#333333')
+                .width('100%')
+                .height(44)
+                .padding({ left: 16, right: 16 })
+                .onClick(() => {
+                  this.showImportExportPanel = false;
+                  this.handleExportToFile();
+                })
+
+              Divider().color('#F0F0F0').margin({ left: 12, right: 12 })
+
+              Text('复制到剪贴板')
+                .fontSize(15)
+                .fontColor('#333333')
+                .width('100%')
+                .height(44)
+                .padding({ left: 16, right: 16 })
+                .onClick(() => {
+                  this.showImportExportPanel = false;
+                  this.handleExportToClipboard();
+                })
+
+              Divider().color('#F0F0F0').margin({ left: 12, right: 12 })
+
+              Text('从文件导入')
+                .fontSize(15)
+                .fontColor('#333333')
+                .width('100%')
+                .height(44)
+                .padding({ left: 16, right: 16 })
+                .onClick(() => {
+                  this.showImportExportPanel = false;
+                  this.handleImportFromFile();
+                })
+
+              Divider().color('#F0F0F0').margin({ left: 12, right: 12 })
+
+              Text('从剪贴板导入')
+                .fontSize(15)
+                .fontColor('#333333')
+                .width('100%')
+                .height(44)
+                .padding({ left: 16, right: 16 })
+                .onClick(() => {
+                  this.showImportExportPanel = false;
+                  this.handleImportFromClipboard();
+                })
+            }
+            .backgroundColor(Color.White)
+            .borderRadius(8)
+            .shadow({ radius: 8, color: '#33000000', offsetY: 2 })
+          }
+          .position({ x: '65%', y: 52 })
+          .zIndex(999)
+        }
+
+        // 导入预览弹窗
+        if (this.showImportPreview && this.importPreviewTimetable !== null) {
+          Column() {
+            Column() {
+              Text('导入预览')
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#333333')
+                .margin({ bottom: 16 })
+
+              Row() {
+                Text('课表名称')
+                  .fontSize(14)
+                  .fontColor('#999999')
+                  .width(70)
+                Text(this.importPreviewTimetable!.name)
+                  .fontSize(15)
+                  .fontColor('#333333')
+                  .layoutWeight(1)
+              }
+              .width('100%')
+              .margin({ bottom: 8 })
+
+              Row() {
+                Text('课程数量')
+                  .fontSize(14)
+                  .fontColor('#999999')
+                  .width(70)
+                Text(this.importPreviewTimetable!.courses.length.toString() + '门')
+                  .fontSize(15)
+                  .fontColor('#333333')
+                  .layoutWeight(1)
+              }
+              .width('100%')
+              .margin({ bottom: 8 })
+
+              if (this.importPreviewTimetable!.semesterStartDate !== '') {
+                Row() {
+                  Text('学期日期')
+                    .fontSize(14)
+                    .fontColor('#999999')
+                    .width(70)
+                  Text(this.importPreviewTimetable!.semesterStartDate)
+                    .fontSize(15)
+                    .fontColor('#333333')
+                    .layoutWeight(1)
+                }
+                .width('100%')
+                .margin({ bottom: 8 })
+              }
+
+              Row() {
+                Text('每天节数')
+                  .fontSize(14)
+                  .fontColor('#999999')
+                  .width(70)
+                Text(this.importPreviewTimetable!.totalSlots.toString() + '节')
+                  .fontSize(15)
+                  .fontColor('#333333')
+                  .layoutWeight(1)
+              }
+              .width('100%')
+              .margin({ bottom: 8 })
+
+              Row() {
+                Text('学期周数')
+                  .fontSize(14)
+                  .fontColor('#999999')
+                  .width(70)
+                Text(this.importPreviewTimetable!.totalWeeks.toString() + '周')
+                  .fontSize(15)
+                  .fontColor('#333333')
+                  .layoutWeight(1)
+              }
+              .width('100%')
+              .margin({ bottom: 12 })
+
+              if (this.importPreviewTimetable!.courses.length > 0) {
+                Divider().color('#F0F0F0').margin({ bottom: 8 })
+
+                Text('课程列表')
+                  .fontSize(13)
+                  .fontColor('#999999')
+                  .margin({ bottom: 6 })
+                  .alignSelf(ItemAlign.Start)
+
+                Scroll() {
+                  Column() {
+                    ForEach(this.importPreviewTimetable!.courses, (course: CourseInfo, index: number) => {
+                      Row() {
+                        Column()
+                          .width(4)
+                          .height(20)
+                          .borderRadius(2)
+                          .backgroundColor(course.color)
+                          .margin({ right: 8 })
+
+                        Text(course.name)
+                          .fontSize(14)
+                          .fontColor('#333333')
+                          .layoutWeight(1)
+
+                        if (course.timeSlots.length > 0 && course.timeSlots[0].teacher !== '') {
+                          Text(course.timeSlots[0].teacher)
+                            .fontSize(12)
+                            .fontColor('#999999')
+                            .maxLines(1)
+                            .textOverflow({ overflow: TextOverflow.Ellipsis })
+                            .constraintSize({ maxWidth: 80 })
+                        }
+                      }
+                      .width('100%')
+                      .height(32)
+                      .alignItems(VerticalAlign.Center)
+                    }, (course: CourseInfo) => course.id + '_' + course.name)
+                  }
+                }
+                .height(Math.min(this.importPreviewTimetable!.courses.length * 32, 160))
+                .scrollBar(BarState.Auto)
+              }
+
+              Row() {
+                Button('取消')
+                  .fontSize(16)
+                  .fontColor('#666666')
+                  .backgroundColor('#B4C6E7')
+                  .borderRadius(8)
+                  .layoutWeight(1)
+                  .height(44)
+                  .onClick(() => {
+                    this.showImportPreview = false;
+                    this.importPreviewTimetable = null;
+                  })
+
+                Button('导入')
+                  .fontSize(16)
+                  .fontColor(Color.White)
+                  .backgroundColor('#5B9BD5')
+                  .borderRadius(8)
+                  .layoutWeight(1)
+                  .height(44)
+                  .margin({ left: 12 })
+                  .onClick(() => {
+                    this.confirmImport();
+                  })
+              }
+              .width('100%')
+              .margin({ top: 16 })
+            }
+            .width('85%')
+            .padding(20)
+            .backgroundColor(Color.White)
+            .borderRadius(12)
+          }
+          .width('100%')
+          .height('100%')
+          .backgroundColor('rgba(0, 0, 0, 0.5)')
+          .justifyContent(FlexAlign.Center)
+          .position({ x: 0, y: 0 })
         }
       }
       .width('100%')
