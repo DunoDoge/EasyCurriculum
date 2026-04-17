@@ -14,6 +14,7 @@ export struct DayView {
   @Param onSlotClick: (slot: number) => void = () => {};
   @Param onSwipePrev: () => void = () => {};
   @Param onSwipeNext: () => void = () => {};
+  @Param scroller: Scroller = new Scroller();
 
   build() {
     Column() {
@@ -44,7 +45,7 @@ export struct DayView {
       .alignItems(VerticalAlign.Center)
 
       // 课程列表区域
-      Scroll() {
+      Scroll(this.scroller) {
         Column() {
           ForEach(this.viewModel.getCourseSlotsByDay(this.selectedWeekDay), (csd: CourseSlotDisplay) => {
             DayCourseCard({
@@ -65,7 +66,7 @@ export struct DayView {
       .layoutWeight(1)
       .scrollBar(BarState.Auto)
       .align(Alignment.Top)
-      .id('dayScroll_' + this.viewModel.dataVersion)
+      .id('dayScrollForShare')
     }
     .width('100%')
     .height('100%')

@@ -9,9 +9,9 @@ import { DayView } from '../components/DayView';
 import { SemesterSettingPage } from './SemesterSettingPage';
 import { ImportExportUtil } from '../common/utils/ImportExportUtil';
 import { ShareUtil } from '../common/utils/ShareUtil';
+import { LongScreenshotUtil } from '../common/utils/LongScreenshotUtil';
 import { Logger } from '../common/utils/Logger';
 import { promptAction } from '@kit.ArkUI';
-import { componentSnapshot } from '@kit.ArkUI';
 import { image } from '@kit.ImageKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
@@ -23,6 +23,8 @@ import { CourseSlotDisplay } from '../viewmodel/CourseViewModel';
 struct Index {
   @Local viewModel: CourseViewModel = new CourseViewModel();
   navPathStack: NavPathStack = new NavPathStack();
+  weekScroller: Scroller = new Scroller();
+  dayScroller: Scroller = new Scroller();
   @Local showWeekPicker: boolean = false;
   @Local showTimetablePicker: boolean = false;
   @Local showNewTimetableDialog: boolean = false;
@@ -109,9 +111,18 @@ struct Index {
   private async generateScheduleImage(): Promise<string | null> {
     try {
       let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      let componentId = this.viewModel.viewMode === 'week' ? 'weekViewForShare' : 'dayViewForShare';
+      let pixelMap: image.PixelMap | null = null;
 
-      let pixelMap = await componentSnapshot.get(componentId);
+      if (this.viewModel.viewMode === 'week') {
+        pixelMap = await LongScreenshotUtil.captureLongScreenshot('weekViewForShare', this.weekScroller);
+      } else {
+        pixelMap = await LongScreenshotUtil.captureLongScreenshot('dayScrollForShare', this.dayScroller);
+      }
+
+      if (pixelMap === null) {
+        Logger.error('Long screenshot returned null');
+        return null;
+      }
 
       let imagePacker = image.createImagePacker();
       let packOpts: image.PackingOption = { format: 'image/png', quality: 100 };
@@ -277,7 +288,7 @@ struct Index {
             }
           })
 
-          Scroll() {
+          Scroll(this.weekScroller) {
             Row() {
               TimeSlotHeader({ totalSlots: this.viewModel.currentTotalSlots })
 
@@ -308,6 +319,7 @@ struct Index {
             selectedWeekDay: this.viewModel.selectedWeekDay,
             currentWeek: this.viewModel.currentWeek,
             viewModel: this.viewModel,
+            scroller: this.dayScroller,
             onBack: () => {
               this.viewModel.switchToWeekView();
             },
