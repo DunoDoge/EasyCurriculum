@@ -12,6 +12,7 @@ import { ShareUtil } from '../common/utils/ShareUtil';
 import { LongScreenshotUtil } from '../common/utils/LongScreenshotUtil';
 import { Logger } from '../common/utils/Logger';
 import { promptAction } from '@kit.ArkUI';
+import { componentSnapshot } from '@kit.ArkUI';
 import { image } from '@kit.ImageKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { common } from '@kit.AbilityKit';
@@ -31,6 +32,8 @@ struct Index {
   @Local newTimetableName: string = '';
   @Local showImportExportPanel: boolean = false;
   @Local showSharePanel: boolean = false;
+  @Local shareHeaderTitle: string = '';
+  @Local shareHeaderSubtitle: string = '';
   @Local showImportPreview: boolean = false;
   @Local importPreviewTimetable: Timetable | null = null;
 
@@ -109,24 +112,48 @@ struct Index {
   }
 
   private async generateScheduleImage(): Promise<string | null> {
+    let headerPm: image.PixelMap | null = null;
+    let contentPm: image.PixelMap | null = null;
+    let finalPm: image.PixelMap | null = null;
     try {
       let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      let pixelMap: image.PixelMap | null = null;
 
+      this.shareHeaderTitle = this.viewModel.currentTimetableName;
       if (this.viewModel.viewMode === 'week') {
-        pixelMap = await LongScreenshotUtil.captureLongScreenshot('weekViewForShare', this.weekScroller);
+        let dateRange = this.viewModel.getWeekDateRange();
+        this.shareHeaderSubtitle = '第' + this.viewModel.currentWeek + '周' + (dateRange !== '' ? ' ' + dateRange : '');
       } else {
-        pixelMap = await LongScreenshotUtil.captureLongScreenshot('dayScrollForShare', this.dayScroller);
+        let dayName = getWeekDayName(this.viewModel.selectedWeekDay as WeekDay);
+        let dayDate = this.viewModel.getDayFullDate();
+        this.shareHeaderSubtitle = dayName + (dayDate !== '' ? ' ' + dayDate : '');
       }
 
-      if (pixelMap === null) {
+      await LongScreenshotUtil.sleep(300);
+
+      headerPm = await componentSnapshot.get('shareHeader', { waitUntilRenderFinished: true });
+
+      if (this.viewModel.viewMode === 'week') {
+        contentPm = await LongScreenshotUtil.captureLongScreenshot('weekViewForShare', this.weekScroller);
+      } else {
+        contentPm = await LongScreenshotUtil.captureLongScreenshot('dayScrollForShare', this.dayScroller);
+      }
+
+      if (contentPm === null) {
         Logger.error('Long screenshot returned null');
+        headerPm.release();
+        return null;
+      }
+
+      finalPm = LongScreenshotUtil.stitchVertical(headerPm, contentPm);
+      if (finalPm === null) {
+        Logger.error('Stitch vertical returned null');
         return null;
       }
 
       let imagePacker = image.createImagePacker();
       let packOpts: image.PackingOption = { format: 'image/png', quality: 100 };
-      let arrayBuffer = await imagePacker.packing(pixelMap, packOpts);
+      let arrayBuffer = await imagePacker.packing(finalPm, packOpts);
+      finalPm.release();
 
       let fileName = this.viewModel.currentTimetableName + '_课表.png';
       let fileUri = await ShareUtil.saveToTempFile(context, arrayBuffer, fileName);
@@ -136,6 +163,9 @@ struct Index {
     } catch (err) {
       let error = err as Error;
       Logger.error('Generate schedule image failed: ' + error.message);
+      try { if (headerPm !== null) { headerPm.release(); } } catch (_) { }
+      try { if (contentPm !== null) { contentPm.release(); } } catch (_) { }
+      try { if (finalPm !== null) { finalPm.release(); } } catch (_) { }
       return null;
     }
   }
@@ -193,7 +223,7 @@ struct Index {
               .fontWeight(FontWeight.Medium)
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
-              .constraintSize({ maxWidth: '35%' })
+              .constraintSize({ maxWidth: '20%' })
 
             Text('▼')
               .fontSize(10)
@@ -841,6 +871,25 @@ struct Index {
       .width('100%')
       .height('100%')
       .backgroundColor('#F5F5F5')
+
+      Column() {
+        Text(this.shareHeaderTitle)
+          .fontSize(20)
+          .fontWeight(FontWeight.Bold)
+          .fontColor('#333333')
+          .width('100%')
+
+        Text(this.shareHeaderSubtitle)
+          .fontSize(14)
+          .fontColor('#666666')
+          .margin({ top: 4 })
+          .width('100%')
+      }
+      .width('100%')
+      .padding({ left: 16, right: 16, top: 20, bottom: 12 })
+      .backgroundColor(Color.White)
+      .id('shareHeader')
+      .position({ x: 0, y: -9999 })
     }
     .navDestination(this.buildNavDestination)
     .mode(NavigationMode.Stack)

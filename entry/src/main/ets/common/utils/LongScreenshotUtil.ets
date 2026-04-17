@@ -101,6 +101,71 @@ export class LongScreenshotUtil {
     }
   }
 
+  static stitchVertical(top: image.PixelMap, bottom: image.PixelMap): image.PixelMap | null {
+    let inputsReleased = false;
+    try {
+      let topInfo = top.getImageInfoSync();
+      let bottomInfo = bottom.getImageInfoSync();
+      let width = Math.max(topInfo.size.width, bottomInfo.size.width);
+      let totalHeight = topInfo.size.height + bottomInfo.size.height;
+
+      let bufferSize = width * totalHeight * 4;
+      let targetBuffer = new ArrayBuffer(bufferSize);
+      let targetView = new Uint8Array(targetBuffer);
+      for (let i = 0; i < bufferSize; i += 4) {
+        targetView[i] = 0xFF;
+        targetView[i + 1] = 0xFF;
+        targetView[i + 2] = 0xFF;
+        targetView[i + 3] = 0xFF;
+      }
+
+      let topBuffer = new ArrayBuffer(topInfo.size.width * topInfo.size.height * 4);
+      top.readPixelsToBufferSync(topBuffer);
+      let topView = new Uint8Array(topBuffer);
+      for (let row = 0; row < topInfo.size.height; row++) {
+        let srcOffset = row * topInfo.size.width * 4;
+        let dstOffset = row * width * 4;
+        let copyLength = Math.min(topInfo.size.width, width) * 4;
+        for (let col = 0; col < copyLength; col++) {
+          targetView[dstOffset + col] = topView[srcOffset + col];
+        }
+      }
+
+      let bottomBuffer = new ArrayBuffer(bottomInfo.size.width * bottomInfo.size.height * 4);
+      bottom.readPixelsToBufferSync(bottomBuffer);
+      let bottomView = new Uint8Array(bottomBuffer);
+      let bottomStartY = topInfo.size.height;
+      for (let row = 0; row < bottomInfo.size.height; row++) {
+        let srcOffset = row * bottomInfo.size.width * 4;
+        let dstOffset = (bottomStartY + row) * width * 4;
+        let copyLength = Math.min(bottomInfo.size.width, width) * 4;
+        for (let col = 0; col < copyLength; col++) {
+          targetView[dstOffset + col] = bottomView[srcOffset + col];
+        }
+      }
+
+      top.release();
+      bottom.release();
+      inputsReleased = true;
+
+      let targetPm = image.createPixelMapSync(targetBuffer, {
+        size: { width: width, height: totalHeight },
+        pixelFormat: image.PixelMapFormat.RGBA_8888,
+        alphaType: image.AlphaType.UNPREMUL
+      });
+
+      return targetPm;
+    } catch (err) {
+      let error = err as Error;
+      Logger.error('Stitch vertical failed: ' + error.message);
+      if (!inputsReleased) {
+        try { top.release(); } catch (_) { }
+        try { bottom.release(); } catch (_) { }
+      }
+      return null;
+    }
+  }
+
   static sleep(ms: number): Promise<void> {
     return new Promise<void>((resolve) => {
       setTimeout(() => {
